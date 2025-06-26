@@ -28,10 +28,10 @@ def htdc_shared_lib(path):
 # Defines
 HTDC_RES = 0.013           # TDC resolution in ns
 N_SAMPLE_MAX = 10000000   # Maximum sample to recover
-"""CH_1 = 1
+CH_1 = 1
 CH_2 = 2
 CH_3 = 4
-CH_4 = 8"""
+CH_4 = 8
 
 # List devices
 # Description: scan all TDC devices available
@@ -211,6 +211,10 @@ def getChannelData(iDev, iCh):
     sample.append(data[i])
   return ret, int(nb.value),sample
 
+def setMeasMode(iDev, iCh, mode):
+    ret = DEVICE.HTDC_setMeasMode(iDev,iCh,mode)
+    return ret
+
 def getCrossCorrelationData(iDev):
   global data 
   sample = []
@@ -234,5 +238,3 @@ def getEventsCounts(iDev):
     for i in range(nEvents.value):
       countsList.append(counts[i])
   return ret, countsList
-  
-

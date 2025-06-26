@@ -84,6 +84,7 @@ class AureaCPC():
         if ret == 0:
             print("acquisition successful")
         return clk.value, det.value
-        
-print(CPC.listDevices)
-aurea = AureaCPC()
+
+if __name__ == "__main__":
+    print(CPC.listDevices)
+    aurea = AureaCPC()
