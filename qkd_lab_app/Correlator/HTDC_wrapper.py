@@ -28,10 +28,10 @@ def htdc_shared_lib(path):
 # Defines
 HTDC_RES = 0.013           # TDC resolution in ns
 N_SAMPLE_MAX = 10000000   # Maximum sample to recover
-CH_1 = 1
+"""CH_1 = 1
 CH_2 = 2
 CH_3 = 4
-CH_4 = 8
+CH_4 = 8"""
 
 # List devices
 # Description: scan all TDC devices available
@@ -83,7 +83,7 @@ def setSyncSource(iDev, mode):
   return ret
 
 # Get Sync source
-# Description: return the actual sync clock source between internal or external  
+# Description: return the current sync clock source between internal or external  
 def getSyncSource(iDev):
   mode = c_short()
   ret = DEVICE.HTDC_getSyncSource(iDev, byref(mode))
@@ -97,7 +97,7 @@ def setInternalSyncFrequency(iDev, value):
   return ret
 
 # Get internal Sync frequency
-# Description: return the actual sync frequency in Hz
+# Description: return the current sync frequency in Hz
 def getInternalSyncFrequency(iDev):
   freq = c_uint()
   ret = DEVICE.HTDC_getInternalSyncFrequency(iDev, byref(freq))
@@ -111,7 +111,7 @@ def setSyncDivider(iDev, value):
   return ret
 
 # Get Sync divider
-# Description: return the actual sync divider
+# Description: return the current sync divider
 def getSyncDivider(iDev):
   div = c_short()
   ret = DEVICE.HTDC_getSyncDivider(iDev, byref(div))
@@ -124,7 +124,7 @@ def setSyncInputConfig(iDev, enable,edge,level):
   return ret
 
 # Get Sync input configuration
-# Description: return the actual sync configuration (power, edge, level) 
+# Description: return the current sync configuration (power, edge, level) 
 def getSyncInputConfig(iDev):
   enable = c_short()
   edge = c_short()
@@ -139,7 +139,7 @@ def setChannelDelay(iDev, iCh,value):
   return ret
 
 # Get Channel delay
-# Description: return the actual delay in ns for the selected channel  
+# Description: return the current delay in ns for the selected channel  
 def getChannelDelay(iDev, iCh):
   delay = c_float()
   ret = DEVICE.HTDC_getChannelDelay(iDev, iCh, byref(delay))
@@ -152,7 +152,7 @@ def setChannelConfig(iDev, iCh, power, edge, level):
   return ret
 
 # Get channel configuration
-# Description: return the actual channel configuration (power, edge, level)
+# Description: return the current channel configuration (power, edge, level)
 def getChannelConfig(iDev, iCh):
   power = c_short()
   edge = c_short()
@@ -171,7 +171,7 @@ def setCrossCorrelationALU(iDev, enable):
     return(ret)
 
 # Get channel state
-# Description: return the actual status, number of sample to recover and consign for the selected channel
+# Description: return the current status, number of sample to recover and consign for the selected channel
 def getChannelState(iDev, iCh):
   state = c_int()
   nSampleToRecover = c_ulong()
@@ -192,7 +192,7 @@ def stopChannel(iDev, iCh):
   return ret
 
 # Get channel data
-# Description: return the actual data from the selected channel (depending on the mode set)
+# Description: return the current data from the selected channel (depending on the mode set)
 def getChannelData(iDev, iCh):
   global data 
   sample = []
@@ -223,7 +223,7 @@ def getCrossCorrelationData(iDev):
   return ret, int(nb.value),sample
 
 # Get counts inputs events 
-# Description: return the actual events counts on each input
+# Description: return the current events counts on each input
 def getEventsCounts(iDev):
   counts = (c_ulong*5)()
   nEvents = c_short()

@@ -67,9 +67,23 @@ class AureaCPC():
         # Wait some time
         time.sleep(2)
         # Close device communication
-        CPC.closeDevice(iDev)
+        
+        clk, det = self.getData(0)
+        print(clk, det)
+        
         # Python main entry point
         #print(self.devList)
+        self.closeDevice()
+    
+    def closeDevice(self):
+        for iDev in range(len(self.devList)):
+            CPC.closeDevice(iDev)
+    
+    def getData(self, iDev):
+        ret,clk,det=CPC.getClockDetData(iDev)
+        if ret == 0:
+            print("acquisition successful")
+        return clk.value, det.value
         
 print(CPC.listDevices)
 aurea = AureaCPC()
