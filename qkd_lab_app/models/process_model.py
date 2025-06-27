@@ -29,11 +29,11 @@ def log_default_params():
                     default_params[param[0].strip()] = param[1].strip()
     return default_params
 
-class processModel():
+class ProcessModel():
     def __init__(self, parent = None):
         self.parent = parent
         
-        self.frequency = 10000000
+        self.frequency = self.parent.frequency
         self.N_SAMPLE = 200000
         self.MAX_DELAY = int(1e09/self.frequency)
     
@@ -104,9 +104,12 @@ class processModel():
     def update_histogram(self, data):
         self.parent.update_data(data)
 
+    def display_maximum(self):
+        self.parent.display_maximum()
+
     
 if __name__ == "__main__":
     default_params = log_default_params()
     print(default_params)
-    processModel()
+    ProcessModel()
     sys.app

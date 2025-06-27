@@ -32,6 +32,7 @@ class AureaHTDC():
         self.res = ChronoXea.HTDC_RES
         
         self.acquisition = True
+        self.opened = False
         
         
         ### Correlator settings
@@ -90,11 +91,16 @@ class AureaHTDC():
         
     def getCorrelation(self, iDev):
         self.acquisition = True
-        if self.openDevice(iDev):
+        if not self.opened:
+            if self.openDevice(iDev):
+                self.opened = True
+                print('starting')
+                self.CrossCorrChannelMes(iDev, self.file_path)
+            else:
+                pass
+        else:
             print('starting')
             self.CrossCorrChannelMes(iDev, self.file_path)
-        else:
-            return None
         
     def stopAcquisition(self):
         self.acquisition = False
@@ -297,7 +303,7 @@ class AureaHTDC():
         elif iCh1 == CH_2 and iCh2 == CH_3:
             value = 2
         elif iCh1 == CH_3 and iCh2 == CH_2:
-            value = 3
+            value = 3  #Pourquoi pas CH4???
         print("value = {}".format(value))
         ret = ChronoXea.setCrossCorrelationALU(iDev,value)
         if ret < 0: print(" -> failed\n")
@@ -334,22 +340,29 @@ class AureaHTDC():
                     # Store result if data available
                     if n > 0:
                         self.sampleList+=sample
-            
+                        corrected_sample = []
+                        for s in sample:
+                            time_value = abs(int(s * ChronoXea.HTDC_RES))
+                            if 0 <= time_value * 1e-9 <= 1 / self.frequency:
+                                corrected_sample.append(time_value)
+                                if path is not None:
+                                    file.write(str(time_value) + '\n')
+                        self.parent.update_histogram(corrected_sample)
+
                     # Wait and display progression
                     #time.sleep(0.1)
                     print("\033[33m\r State: {} | {}/{} data recovered\033[0m".format(state,self.nSampleRecovered,self.nSampleToRecover))
                 else: print("\nGet Channel Data: error\n")
             else: print("\nchannel State: error\n")
-        print("out of the loop")
+        #self.parent.update_histogram(self.sampleList)
+        self.parent.display_maximum()
         if path is not None:
-            for sample in self.sampleList:
-                print('sample')
+            """for sample in self.sampleList:
                 time_value = round(sample*ChronoXea.HTDC_RES,3)
                 if time_value * 1e-9 <= 1/self.frequency:
-                    print('saved')
                     file.write(str(time_value) + '\n')
-                    self.parent.update_histogram([time_value])
-                #self.file.write("\n")
+                    #self.parent.update_histogram([time_value])
+                #self.file.write("\n")"""
             return file
         return None
     

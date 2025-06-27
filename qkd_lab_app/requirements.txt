@@ -1,0 +1,5 @@
+lensepy
+numpy
+matplotlib
+pyqt6
+opencv-python
