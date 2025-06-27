@@ -9,38 +9,51 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys, os
 
+sys.path.append(os.path.abspath(".."))
+
 from aurea_cpc import AureaCPC
 from aurea_htdc import AureaHTDC
+from views.histo_display import HistogramDisplayWidget
 
 def log_default_params():
     default_params = {}
     config = os.path.dirname(os.path.abspath(".")) + r"\config.txt"
-    with open(config, 'r') as config:
-        for ligne in config:
+    with open(config, 'r') as default:
+        for ligne in default:
+            print(f"ligne = {ligne}")
             if str(ligne).startswith('%') or str(ligne).startswith('#'):
                 continue
             else:
                 param = str(ligne).split(';')
-                default_params[param[0]] = param[1]
+                if len(param) == 2:
+                    default_params[param[0].strip()] = param[1].strip()
     return default_params
 
 class processModel():
     def __init__(self):
-        #self.cpc = AureaCPC
-        #self.htdc = AureaHTDC()
+        self.frequency = 10000000
+        self.N_SAMPLE = 20000000
+        self.MAX_DELAY = int(1e09/self.frequency)
+        self.histogram = HistogramDisplayWidget(self)
+        #self.histogram.show()
         
-        self.res = default_params["HTDC_RES"]
+        #self.cpc = AureaCPC
+        self.htdc = AureaHTDC(self)
+        
+        self.res = 0.1#float(default_params["HTDC_RES"])
+        print(self.res)
         
         self.fichier = os.path.dirname(os.path.abspath(__file__)) + r"\test.txt"
         self.delays = []
-         
-        self.delays = self.open_data()
-        print(self.delays)
+        
+        
+        """self.delays = self.open_data()
+        #print(self.delays)
         self.tracer_histogramme(self.delays)
         corr = self.filter_noise(self.delays)
         print(corr[0])
         self.tracer_histogramme(corr[1])
-        plt.show()
+        plt.show()"""
         
         
     def open_data(self):
@@ -59,7 +72,7 @@ class processModel():
         
     def tracer_histogramme(self, delays):
         plt.figure(figsize=(10, 6))
-        plt.hist(delays, bins=int((1000)/0.1), range=(0, 1000), edgecolor='black')
+        plt.hist(delays, bins=int(self.MAX_DELAY), range=(0, self.MAX_DELAY), edgecolor='black')
         plt.xlabel("Delay [ns]")
         plt.ylabel("Number of events")
         plt.title("Cross corrleation")
@@ -75,12 +88,22 @@ class processModel():
                 index_dict[int(delay/self.res)] = 1
             else:
                 index_dict[int(delay/self.res)] += 1
-        print(index_dict)
-        delay_maximum = max(index_dict.values())
+        maximums_list = []
+        histo_list = []
+        values = index_dict.values()
+        if len(values) != 0:
+            delay_maximum = max(values)
+            print(delay_maximum)
         for delay in index_dict.keys():
-            if index_dict[delay] == delay_maximum:
-                return delay*self.res, [delay*self.res for i in range(delay_maximum)]
-        return None, None
+            if index_dict[delay] == delay_maximum and delay_maximum > 1:
+                maximums_list.append(delay*self.res)#, [delay*self.res for i in range(delay_maximum)]
+        for element in maximums_list:
+            histo_list += [element] * delay_maximum
+        return maximums_list, histo_list
+    
+    def update_histogram(self, data):
+        self.histogram.update_data(data)
+
     
 if __name__ == "__main__":
     default_params = log_default_params()

@@ -8,6 +8,7 @@ Created on Wed Jun 25 12:50:28 2025
 from ctypes import *
 import time
 import sys, os
+import numpy as np
 
 sys.path.append(os.path.abspath("../Correlator"))
 
@@ -37,8 +38,9 @@ class AureaHTDC():
         self.nSampleRecovered=int(0)
         self.nSampleToRecover=int(0)
         self.devList = []
-        self.N_SAMPLE = int(200000)
+        self.N_SAMPLE = self.parent.N_SAMPLE
         self.TARGET_CH = int(2)
+        self.frequency = self.parent.frequency
         
         ### Correlation channels
         self.A_CH = int(2)
@@ -101,7 +103,7 @@ class AureaHTDC():
         else:
             print("\nset Sync Source: error\n")
         
-        self.setFrequency(iDev, 1000000)
+        self.setFrequency(iDev, self.frequency)
         self.setSyncDivider(iDev)
         self.inputConfig(iDev)
         self.setChanDelay(iDev)
@@ -123,7 +125,7 @@ class AureaHTDC():
         else:
             print("\nset Sync Source: error\n")
         
-        self.setFrequency(iDev, 1000000)
+        self.setFrequency(iDev, self.frequency)
         self.setSyncDivider(iDev)
         self.inputConfig(iDev)
         self.setChanDelay(iDev, self.A_CH)
@@ -271,7 +273,9 @@ class AureaHTDC():
             else: print("\nchannel State: error\n")
         if path is not None:
             for sample in self.sampleList:
-                file.write(str(round(sample*ChronoXea.HTDC_RES,3)) + '\n')
+                time_value = round(sample*ChronoXea.HTDC_RES,3)
+                if time_value * 1e-9 <= 1/self.frequency:
+                    file.write(str(time_value) + '\n')
                 #self.file.write("\n")
             return file
         return None
@@ -324,8 +328,9 @@ class AureaHTDC():
                 
                 if ret == 0:
                     # Store result if data available
-                    if n > 0: 
+                    if n > 0:
                         self.sampleList+=sample
+                        self.parent.update_histogram(np.array(sample)*ChronoXea.HTDC_RES)
             
                     # Wait and display progression
                     #time.sleep(0.1)
@@ -334,7 +339,9 @@ class AureaHTDC():
             else: print("\nchannel State: error\n")
         if path is not None:
             for sample in self.sampleList:
-                file.write(str(round(sample*ChronoXea.HTDC_RES,3)) + '\n')
+                time_value = round(sample*ChronoXea.HTDC_RES,3)
+                if time_value * 1e-9 <= 1/self.frequency:
+                    file.write(str(time_value) + '\n')
                 #self.file.write("\n")
             return file
         return None
