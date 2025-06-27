@@ -11,9 +11,9 @@ import sys, os
 
 sys.path.append(os.path.abspath(".."))
 
-from aurea_cpc import AureaCPC
-from aurea_htdc import AureaHTDC
-from views.histo_display import HistogramDisplayWidget
+from models.aurea_cpc import AureaCPC
+from models.aurea_htdc import AureaHTDC
+from views.histogram_display_widget import HistogramDisplayWidget
 
 def log_default_params():
     default_params = {}
@@ -30,13 +30,13 @@ def log_default_params():
     return default_params
 
 class processModel():
-    def __init__(self):
-        self.frequency = 10000000
-        self.N_SAMPLE = 20000000
-        self.MAX_DELAY = int(1e09/self.frequency)
-        self.histogram = HistogramDisplayWidget(self)
-        #self.histogram.show()
+    def __init__(self, parent = None):
+        self.parent = parent
         
+        self.frequency = 10000000
+        self.N_SAMPLE = 200000
+        self.MAX_DELAY = int(1e09/self.frequency)
+    
         #self.cpc = AureaCPC
         self.htdc = AureaHTDC(self)
         
@@ -102,10 +102,11 @@ class processModel():
         return maximums_list, histo_list
     
     def update_histogram(self, data):
-        self.histogram.update_data(data)
+        self.parent.update_data(data)
 
     
 if __name__ == "__main__":
     default_params = log_default_params()
     print(default_params)
     processModel()
+    sys.app

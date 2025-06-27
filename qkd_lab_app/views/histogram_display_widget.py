@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Fri Jun 27 11:27:54 2025
+
+@author: CRYPTO_B
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Fri Jun 27 10:56:27 2025
 
 @author: CRYPTO_B
@@ -13,7 +20,7 @@ import numpy as np
 
 class HistogramDisplayWidget(QWidget):
     def __init__(self, parent=None):
-        super().__init__()
+        super().__init__(parent)
         
         self.data = []
         
@@ -51,7 +58,7 @@ class HistogramDisplayWidget(QWidget):
     
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = HistogramWidget()
+    window = HistogramDisplayWidget()
     window.resize(600, 400)
     window.show()
     sys.exit(app.exec_())
