@@ -1,3 +1,4 @@
+from PyQt6.QtCore import QThread
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QApplication, QVBoxLayout
 import sys, os
 
@@ -11,3 +12,7 @@ class MainController(QWidget):
     def __init__(self, parent = None):
         super().__init__()
         self.parent = parent
+
+        self.Thread = QThread(self)
+
+        self.worker = None

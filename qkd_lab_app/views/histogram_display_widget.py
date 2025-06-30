@@ -32,7 +32,7 @@ class HistogramDisplayWidget(QWidget):
         ### Paramètres de l'histogramme
         self.MIN_DELAY = 0
         self.MAX_DELAY = self.parent.MAX_DELAY
-        self.res = 0.013 #self.parent.res
+        self.res = self.parent.res
         self.hist_dict = {}#{self.MIN_DELAY/self.res:0.001, self.MAX_DELAY/self.res:0.001}
 
         self.figure = Figure(figsize=(5, 4))

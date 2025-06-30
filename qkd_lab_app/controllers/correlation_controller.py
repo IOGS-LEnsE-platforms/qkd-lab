@@ -20,7 +20,7 @@ class correlationController(QWidget):
         self.frequency = 5000000
         self.MAX_DELAY = int(1e09 / self.frequency)
         self.Npoints = 300 #Number of points on the histogram, avoids exceedingly long processes at low frequencies
-        self.res = 0.1
+        self.res = 0.02
         
         self.layout = QHBoxLayout()
         self.left_layout = QVBoxLayout()

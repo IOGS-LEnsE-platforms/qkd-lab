@@ -260,7 +260,7 @@ class AureaHTDC():
         if path is not None:
             file = self.createDestination(path)
         print("Recover target channel data... ")
-        while self.nSampleRecovered<self.nSampleToRecover and i<100 and self.acquisition:
+        while self.nSampleRecovered<self.nSampleToRecover and i<self.N_SAMPLE and self.acquisition:
             # Recover target channel state, to known how much data are available
             ret, state, _, nSample = ChronoXea.getChannelState(iDev, self.TARGET_CH)
             if ret == 0:
@@ -323,7 +323,7 @@ class AureaHTDC():
         if path is not None:
             file = self.createDestination(path)
         print("Recover target channel data... ")
-        while self.nSampleRecovered<self.nSampleToRecover and i<100 and self.acquisition:
+        while self.nSampleRecovered<self.nSampleToRecover and i<self.N_SAMPLE and self.acquisition:
             # Recover target channel state, to known how much data are available
             ret, state, _, nSample = ChronoXea.getChannelState(iDev, self.COR_CH) #4294967295=-1
             #print(ret, state, nSample)
@@ -360,14 +360,14 @@ class AureaHTDC():
             return file
         return None
 
-    def OneShotSingleChannel(self, iDev, file, path = None):
-        ret, state, _, nSample = ChronoXea.getChannelState(iDev, self.TARGET_CH)
+    def OneShotSingleChannel(self, iDev, iCh):
+        ret, state, _, nSample = ChronoXea.getChannelState(iDev, iCh)
         if ret == 0:
             print("\33[0m\tnSample : {}".format(nSample))
             self.nSampleRecovered += nSample
 
             # Get channel data
-            ret, n, sample = ChronoXea.getChannelData(iDev, self.TARGET_CH)
+            ret, n, sample = ChronoXea.getChannelData(iDev, iCh)
 
             if ret == 0:
                 # Store result if data available
@@ -378,9 +378,6 @@ class AureaHTDC():
                         time_value = round(s * ChronoXea.HTDC_RES, 3)
                         if 0 <= time_value * 1e-9 <= 1 / self.frequency:
                             corrected_sample.append(time_value)
-                            if path is not None:
-                                file.write(str(time_value) + '\n')
-                    self.parent.update_histogram(corrected_sample)
 
                 # Wait and display progression
                 time.sleep(0.1)
@@ -388,10 +385,13 @@ class AureaHTDC():
                                                                                   self.nSampleToRecover))
             else:
                 print("\nGet Channel Data: error\n")
+                corrected_sample = []
         else:
             print("\nchannel State: error\n")
+            corrected_sample = []
+        return corrected_sample
 
-    def OneShotCorrelation(self, iDev, file, path = None):
+    def OneShotCorrelation(self, iDev):
         ret, state, _, nSample = ChronoXea.getChannelState(iDev, self.COR_CH)  # 4294967295=-1
         # print(ret, state, nSample)
         if ret == 0:
@@ -411,9 +411,6 @@ class AureaHTDC():
                         time_value = round(s * ChronoXea.HTDC_RES, 3)
                         if 0 <= time_value * 1e-9 <= 1 / self.frequency:
                             corrected_sample.append(time_value)
-                            if path is not None:
-                                file.write(str(time_value) + '\n')
-                    self.parent.update_histogram(corrected_sample)
 
                 # Wait and display progression
                 time.sleep(0.1)
@@ -421,8 +418,11 @@ class AureaHTDC():
                                                                                   self.nSampleToRecover))
             else:
                 print("\nGet Channel Data: error\n")
+                corrected_sample = []
         else:
             print("\nchannel State: error\n")
+            corrected_sample = []
+        return corrected_sample
         
 if __name__ == "__main__":
     aurea = AureaHTDC()
