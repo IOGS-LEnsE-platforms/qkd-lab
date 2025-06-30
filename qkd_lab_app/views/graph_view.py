@@ -16,7 +16,7 @@ class GraphView(QWidget):
         self.title = 'graph_title'
 
         self.counting_rate = 1
-        self.data = []
+        self.data = [0, 3, 5, 7, 2, 4, 3]
         self.x = []
 
         self.MAX_INDEX = 10
@@ -36,6 +36,8 @@ class GraphView(QWidget):
         self.ax.clear()
         self.ax.plot(self.x, self.data, color = 'r')
         self.ax.set_title(self.title)
+        self.ax.set_ylabel("counts")
+        self.ax.set_xlabel("delay(ns)")
         self.canvas.draw()
         QApplication.processEvents()
 

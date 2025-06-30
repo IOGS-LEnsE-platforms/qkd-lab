@@ -17,6 +17,7 @@ class DisplayView(QWidget):
         self.layout = QVBoxLayout()
 
         self.MAX_DELAY = 100  # A modifier
+        self.res = 0.013 # A modifier
 
         self.histogram = HistogramDisplayWidget(self)
         self.graph = GraphView(self)

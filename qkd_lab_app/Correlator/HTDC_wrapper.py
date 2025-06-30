@@ -215,6 +215,10 @@ def setMeasMode(iDev, iCh, mode):
     ret = DEVICE.HTDC_setMeasMode(iDev,iCh,mode)
     return ret
 
+def setResultFormat(iCh1, iCh2, mode):
+    ret = DEVICE.HTDC_setResultFormat(iCh1 | iCh2, mode)
+    return ret
+
 def getCrossCorrelationData(iDev):
   global data 
   sample = []
@@ -234,7 +238,7 @@ def getEventsCounts(iDev):
   countsList = []
   ret = DEVICE.HTDC_getEventsCounts(iDev, byref(nEvents), counts)
   #print(ret)
-  if(ret == 0):
+  if ret == 0:
     for i in range(nEvents.value):
       countsList.append(counts[i])
   return ret, countsList
