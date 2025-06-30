@@ -32,12 +32,8 @@ class HistogramDisplayWidget(QWidget):
         ### Paramètres de l'histogramme
         self.MIN_DELAY = 0
         self.MAX_DELAY = self.parent.MAX_DELAY
-        self.res = self.parent.res
-        self.bins = int((self.MAX_DELAY - self.MIN_DELAY) / self.res)#self.parent.Npoints
-
-        self.bin_edges = np.linspace(self.MIN_DELAY, self.MAX_DELAY, self.bins + 1)
-        self.hist_counts = np.zeros(self.bins, dtype=int)
-        self.bin_centers = (self.bin_edges[:-1] + self.bin_edges[1:]) / 2
+        self.res = 0.013 #self.parent.res
+        self.hist_dict = {}#{self.MIN_DELAY/self.res:0.001, self.MAX_DELAY/self.res:0.001}
 
         self.figure = Figure(figsize=(5, 4))
         self.ax = self.figure.add_subplot(111)
@@ -50,11 +46,12 @@ class HistogramDisplayWidget(QWidget):
         self.setLayout(layout)
 
         self.plot_histogram()
+        #self.update_data([1*self.res, 3*self.res+0.001])
 
-    def plot_histogram(self):
+    """def plot_histogram(self):
         self.ax.clear()
         self.ax.bar(self.bin_centers, self.hist_counts, width=(self.bin_edges[1]-self.bin_edges[0]), color='black', align='center')
-        self.ax.set_title(self.title)
+        #self.ax.set_title(self.title)
         self.canvas.draw()
 
     def update_data(self, new_data):
@@ -64,7 +61,40 @@ class HistogramDisplayWidget(QWidget):
             if 0 <= i < self.bins:
                 self.hist_counts[i] += 1
         self.plot_histogram()
+        QApplication.processEvents()"""
+
+    def plot_histogram(self):
+        self.ax.clear()
+        x = [t*self.res for t in self.hist_dict.keys()]
+        y = [value for value in self.hist_dict.values()]
+
+        self.ax.bar(x, y, width = self.MAX_DELAY*self.res/5, color='black', align='center')
+        self.ax.set_title(self.title)
+        self.canvas.draw()
         QApplication.processEvents()
+
+    def update_data(self, new_data):
+        '''Takes in the set of new TIME values and updates the histogram by searching the nearest bin in a range of res/2'''
+        for x in new_data:
+            x = int(x/self.res)
+            #in_dict = False
+
+            if x in self.hist_dict.keys():
+                self.hist_dict[x] += 1
+            else:
+                self.hist_dict[x] = 1
+
+            """for k in self.hist_dict.keys():
+                if abs(x-k) <= 1/2:
+                    self.hist_dict[k] += 1
+                    in_dict = True
+                    break
+            
+            if not in_dict:
+                self.hist_dict[x] += 1"""
+        self.plot_histogram()
+
+
     
     def change_title(self, title):
         self.title = title
@@ -74,10 +104,13 @@ class HistogramDisplayWidget(QWidget):
         self.ax.clear()
 
     def find_maximum(self):
-        i_max = self.hist_counts.argmax()
-        cor_max = self.hist_counts.max()
-        self.hist_counts = np.zeros(self.bins, dtype=int)
-        self.hist_counts[i_max] = cor_max
+        i_max = max(self.hist_dict.values())
+        k_max = 0
+        new_dict = {0: 0.001, self.MAX_DELAY / self.res: 0.001}
+        for k in self.hist_dict.keys():
+            if self.hist_dict[k] == i_max:
+                new_dict[k] = i_max
+        self.hist_dict = new_dict
         self.plot_histogram()
     
 if __name__ == "__main__":

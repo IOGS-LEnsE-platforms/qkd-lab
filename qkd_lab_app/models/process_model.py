@@ -34,7 +34,7 @@ class ProcessModel():
         self.parent = parent
         
         self.frequency = self.parent.frequency
-        self.N_SAMPLE = 200000
+        self.N_SAMPLE = 20000
         self.MAX_DELAY = int(1e09/self.frequency)
     
         #self.cpc = AureaCPC

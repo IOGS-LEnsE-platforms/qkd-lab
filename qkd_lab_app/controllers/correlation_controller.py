@@ -53,6 +53,9 @@ class correlationController(QWidget):
     def display_maximum(self):
         self.histogram.find_maximum()
 
+    def resizeEvent(self, event):
+        QApplication.processEvents()
+
 if __name__ == "__main__":
     if __name__ == "__main__":
         app = QApplication(sys.argv)
