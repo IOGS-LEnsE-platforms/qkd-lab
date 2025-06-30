@@ -37,6 +37,7 @@ class HistogramDisplayWidget(QWidget):
 
         self.figure = Figure(figsize=(5, 4))
         self.ax = self.figure.add_subplot(111)
+        self.ax.set_xlabel("time (ns)")
         self.ax.set_title(self.title)
 
         self.canvas = FigureCanvas(self.figure)
@@ -70,28 +71,20 @@ class HistogramDisplayWidget(QWidget):
 
         self.ax.bar(x, y, width = self.MAX_DELAY*self.res/5, color='black', align='center')
         self.ax.set_title(self.title)
+        self.ax.set_xlabel("time (ns)")
         self.canvas.draw()
         QApplication.processEvents()
 
     def update_data(self, new_data):
         '''Takes in the set of new TIME values and updates the histogram by searching the nearest bin in a range of res/2'''
         for x in new_data:
-            x = int(x/self.res)
+            #x = int(x/self.res)
             #in_dict = False
 
             if x in self.hist_dict.keys():
                 self.hist_dict[x] += 1
             else:
                 self.hist_dict[x] = 1
-
-            """for k in self.hist_dict.keys():
-                if abs(x-k) <= 1/2:
-                    self.hist_dict[k] += 1
-                    in_dict = True
-                    break
-            
-            if not in_dict:
-                self.hist_dict[x] += 1"""
         self.plot_histogram()
 
 

@@ -72,7 +72,7 @@ class SingleChannelWorker(QObject):
         while self._running and acquisition_proceeding:
             for iCh in self.CH_BOB:
                 sample = self.htdc.OneShotSingleChannel(self.iDev)
-                self.sample_recieved.emit(f"single channel={sample}={iCh}")
+                self.sample_recieved.emit(f"time tagging={sample}={iCh}")
             if self.htdc.nSampleToRecover != -1:
                 acquisition_proceeding = self.htdc.nSampleRecovered < self.htdc.nSampleToRecover
         self.acquisition_finished.emit("finished")
