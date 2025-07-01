@@ -29,6 +29,7 @@ class FreeCPCView(QWidget):
         self.combo_box = QComboBox()
         self.combo_box.addItems(self.devices_list)
         self.index_layout.addWidget(self.combo_box)
+        self.combo_box.currentIndexChanged.connect(self.update_action)
 
         self.spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
@@ -59,6 +60,9 @@ class FreeCPCView(QWidget):
 
     def slider_action(self):
         self.timespan_label.setText(f"Graph time span (ns) : {self.timespan_slider.value()}")
+
+    def update_action(self):
+        pass
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

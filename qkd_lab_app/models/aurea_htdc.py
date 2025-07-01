@@ -33,7 +33,7 @@ class AureaHTDC():
         
         self.acquisition = True
         self.opened = False
-        
+        self.device_connected = False
         
         ### Correlator settings
         iDev = int(0)
@@ -67,13 +67,15 @@ class AureaHTDC():
                 time_slept += 1
                 if time_slept > 5:
                     print("No device found")
-                    return None
+                    self.device_connected = False
             print('device connected')
         elif nDev>1: # if more 1 device detected, select target
             print("Found " + str(nDev) + " device(s) :")
             for i in range(nDev):
                 print (" -"+str(i)+": " + self.devList[i])
                 #iDev=int(input("Select device to open (0 to n):"))# A retirer
+        else:
+            self.device_connected = True
         # Open device
         #if ChronoXea.openDevice(iDev)<0:
             #ChronoXea.closeDevice(iDev)
@@ -87,20 +89,70 @@ class AureaHTDC():
         ### iCh : indice de channel
         ### iDev : indice de device (dans la liste)
         ChronoXea.closeDevice(iDev)
-        
+
+    def ready_channel_timetagging(self, iDev):
+        self.setFrequency(iDev, self.frequency)
+        self.setSyncDivider(iDev)
+        self.inputConfig(iDev)
+        self.setChanDelay(iDev, self.TARGET_CH)
+        self.setChanConfig(iDev, self.TARGET_CH)
+        self.armChannel(iDev, self.TARGET_CH, self.N_SAMPLE)
+        self.startChannel(iDev, self.TARGET_CH)
+
+    def ready_channel_correlation(self, iDev):
+        self.setFrequency(iDev, self.frequency)
+        self.setSyncDivider(iDev)
+        self.inputConfig(iDev)
+        self.setChanDelay(iDev, self.A_CH)
+        # self.setChanDelay(iDev, self.B_CH)
+        # self.setChanDelay(iDev, self.COR_CH)
+        ChronoXea.setResultFormat(self.A_CH, self.B_CH, 1)
+        self.setChanConfig(iDev, self.A_CH)
+        self.setChanConfig(iDev, self.B_CH)
+        self.setChanConfig(iDev, self.COR_CH)
+        self.setContinuous(iDev, self.A_CH)
+        self.setContinuous(iDev, self.B_CH)
+
+        self.armChannel(iDev, self.A_CH, -1)
+        self.armChannel(iDev, self.B_CH, -1)
+
+        self.initCorrALU(iDev, self.A_CH, self.B_CH)
+
+        self.startChannel(iDev, self.A_CH)
+        self.startChannel(iDev, self.B_CH)
+        self.startChannel(iDev, self.COR_CH)
         
     def getCorrelation(self, iDev):
         self.acquisition = True
-        if not self.opened:
-            if self.openDevice(iDev):
-                self.opened = True
+        if self.device_connected:
+            if not self.opened:
+                if self.openDevice(iDev):
+                    self.opened = True
+                    print('starting')
+                    self.CrossCorrChannelMes(iDev, self.file_path)
+                else:
+                    pass
+            else:
                 print('starting')
                 self.CrossCorrChannelMes(iDev, self.file_path)
-            else:
-                pass
         else:
-            print('starting')
-            self.CrossCorrChannelMes(iDev, self.file_path)
+            pass
+
+    def getTimeTagging(self, iDev):
+        self.acquisition = True
+        if self.device_connected:
+            if not self.opened:
+                if self.openDevice(iDev):
+                    self.opened = True
+                    print('starting')
+                    self.SingleChannelMes(iDev, self.file_path)
+                else:
+                    pass
+            else:
+                print('starting')
+                self.SingleChannelMes(iDev, self.file_path)
+        else:
+            pass
         
     def stopAcquisition(self):
         self.acquisition = False
@@ -113,13 +165,7 @@ class AureaHTDC():
         else:
             print("\nset Sync Source: error\n")
         
-        self.setFrequency(iDev, self.frequency)
-        self.setSyncDivider(iDev)
-        self.inputConfig(iDev)
-        self.setChanDelay(iDev)
-        self.setChanConfig(iDev, self.TARGET_CH)
-        self.armChannel(iDev, self.TARGET_CH, self.N_SAMPLE)
-        self.startChannel(iDev, self.TARGET_CH)
+        self.ready_channel_timetagging(iDev)
         file = self.getSingleChanData(iDev, path)
         file.close()
         self.file = file
@@ -135,27 +181,7 @@ class AureaHTDC():
         else:
             print("\nset Sync Source: error\n")
         
-        self.setFrequency(iDev, self.frequency)
-        self.setSyncDivider(iDev)
-        self.inputConfig(iDev)
-        self.setChanDelay(iDev, self.A_CH)
-        #self.setChanDelay(iDev, self.B_CH)
-        #self.setChanDelay(iDev, self.COR_CH)
-        ChronoXea.setResultFormat(self.A_CH, self.B_CH, 1)
-        self.setChanConfig(iDev, self.A_CH)
-        self.setChanConfig(iDev, self.B_CH)
-        self.setChanConfig(iDev, self.COR_CH)
-        self.setContinuous(iDev, self.A_CH)
-        self.setContinuous(iDev, self.B_CH)
-        
-        self.armChannel(iDev, self.A_CH, -1)
-        self.armChannel(iDev, self.B_CH, -1)
-        
-        self.initCorrALU(iDev, self.A_CH, self.B_CH)
-        
-        self.startChannel(iDev, self.A_CH)
-        self.startChannel(iDev, self.B_CH)
-        self.startChannel(iDev, self.COR_CH)
+        self.ready_channel_correlation(iDev)
         
         file = self.getCrossCorrData(iDev, path)
         file.close()
@@ -276,6 +302,14 @@ class AureaHTDC():
                       # Store result if data available
                       if n > 0: 
                           self.sampleList+=sample
+                          corrected_sample = []
+                          for s in sample:
+                              time_value = round(s * ChronoXea.HTDC_RES, 3)
+                              if 0 <= time_value * 1e-9 <= 1 / self.frequency:
+                                  corrected_sample.append(s)
+                                  if path is not None:
+                                      file.write(str(s) + '\n')
+                          self.parent.update_histogram(corrected_sample)
           
                       # Wait and display progression
                       #time.sleep(0.1)
@@ -283,11 +317,6 @@ class AureaHTDC():
                   else: print("\33[0m\nGet Channel Data: error\n")
             else: print("\nchannel State: error\n")
         if path is not None:
-            for sample in self.sampleList:
-                time_value = round(sample*ChronoXea.HTDC_RES,3)
-                if time_value * 1e-9 <= 1/self.frequency:
-                    file.write(str(time_value) + '\n')
-                #self.file.write("\n")
             return file
         return None
     
