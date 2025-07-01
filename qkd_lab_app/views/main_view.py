@@ -8,6 +8,7 @@ from views.correlation_view import CorrelationView
 from views.histogram_display_widget import HistogramDisplayWidget
 from views.graph_view import GraphView
 from views.title_view import TitleView
+from views.timetagging_view import TimeTaggingView
 
 class DisplayView(QWidget):
     def __init__(self, parent = None):
@@ -84,12 +85,20 @@ class MainView(QWidget):
         ###Contrôles
         self.top_widget = TopWidget(self)
         self.correlation_view = CorrelationView(self)
+        self.time_tagging_view = TimeTaggingView(self)
 
         self.top_widget.setMaximumWidth(300)
         self.correlation_view.setMaximumWidth(300)
+        self.time_tagging_view.setMaximumWidth(300)
 
         self.controls_layout.addWidget(self.top_widget)
         self.controls_layout.addWidget(self.correlation_view)
+        self.controls_layout.addWidget(self.time_tagging_view)
+
+
+        ### Events
+        self.timetagging = self.time_tagging_view.timetagging
+        self.correlation = self.correlation_view.correlation
 
         ### Mise en place du layout
         self.layout.addLayout(self.controls_layout)

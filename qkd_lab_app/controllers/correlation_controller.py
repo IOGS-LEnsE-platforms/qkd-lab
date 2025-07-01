@@ -27,7 +27,7 @@ class correlationController(QWidget):
         self.model = ProcessModel(self)
         
         self.corr_button = QPushButton('lancer l\'acquisition')
-        self.corr_button.clicked.connect(self.model.htdc.getCorrelation)
+        self.corr_button.clicked.connect(self.model.htdc.getTimeTagging)
         
         self.stop_button = QPushButton('stopper l\'acquisition')
         self.stop_button.clicked.connect(self.stopAcquisition)
@@ -53,6 +53,10 @@ class correlationController(QWidget):
         self.histogram.find_maximum()
 
     def resizeEvent(self, event):
+        QApplication.processEvents()
+
+    def closeEvent(self, event):
+        self.model.htdc.close(0)
         QApplication.processEvents()
 
 if __name__ == "__main__":

@@ -5,6 +5,9 @@ if __name__ == '__main__':
 
 
 class CorrelationView(QWidget):
+
+    correlation = pyqtSignal(str)
+
     def __init__(self, parent = None):
         super().__init__()
         self.parent = parent
@@ -48,6 +51,7 @@ class CorrelationView(QWidget):
         self.Nmatch_label = QLabel(f'number_of_time_matches : {0}')
 
         self.start_cor_button = QPushButton('Start Correlation')
+        self.start_cor_button.clicked.connect(self.slider_action)
 
         self.cor_bar = QProgressBar()
         self.cor_bar.setMaximum(100)
@@ -69,6 +73,8 @@ class CorrelationView(QWidget):
             self.freq_label.setText(f'frequency : {self.freq_slider.value()} Hz')
         if sender == self.Nsample_slider:
             self.Nsample_label.setText(f'number_of_samples : {self.Nsample_slider.value()}')
+        if sender == self.start_cor_button:
+            self.correlation.emit("correlation")
 
     def update_progress(self, value):
         self.cor_bar.setValue(int(value) * 100)
