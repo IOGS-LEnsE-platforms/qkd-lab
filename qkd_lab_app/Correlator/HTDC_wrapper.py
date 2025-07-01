@@ -197,7 +197,7 @@ def getChannelData(iDev, iCh):
   global data 
   sample = []
   data = (c_ulonglong*N_SAMPLE_MAX)()
-  nb = c_ulong(0)
+  nb = c_ulonglong(0)
   if iCh == 1:
     ret = DEVICE.HTDC_getCh1Data(iDev, byref(data), byref(nb))
   elif iCh == 2:
@@ -216,7 +216,21 @@ def setMeasMode(iDev, iCh, mode):
     return ret
 
 def setResultFormat(iCh1, iCh2, mode):
+    '''
+    mode 0: raw data
+    mode 1 : tag and time
+    mode 2 : only tag
+    '''
     ret = DEVICE.HTDC_setResultFormat(iCh1 | iCh2, mode)
+    return ret
+
+def set_mode(iCh, mode):
+    '''
+    mode 0: raw data
+    mode 1 : tag and time
+    mode 2 : only tag
+    '''
+    ret = DEVICE.HTDC_setResultFormat(iCh, mode)
     return ret
 
 def getCrossCorrelationData(iDev):

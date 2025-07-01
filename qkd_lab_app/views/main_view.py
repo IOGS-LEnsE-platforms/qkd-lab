@@ -137,6 +137,12 @@ class MainView(QWidget):
         elif index == 3:
             self.bottom_right_display.update_data(new_data)
 
+    def update_correlation_progress(self, value):
+        self.correlation.update_progress(value)
+
+    def update_timetagging_progress(self, value, iCh):
+        self.timetagging.update_progress(value, iCh)
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainView()

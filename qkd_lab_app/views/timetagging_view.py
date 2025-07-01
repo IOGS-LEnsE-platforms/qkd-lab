@@ -39,7 +39,28 @@ class TimeTaggingView(QWidget):
             self.bar_layouts[i].addWidget(self.progress_bars[i])
             self.layout.addLayout(self.bar_layouts[i])
 
+        self.stop_timetagging = QPushButton("Stop Timetagging")
+        self.layout.addWidget(self.stop_timetagging)
+        self.stop_timetagging.clicked.connect(self.update_action)
+
         self.setLayout(self.layout)
 
     def update_action(self):
-        self.timetagging.emit("timetagging")
+        sender = self.sender()
+        if sender == self.start_timetagging:
+            self.timetagging.emit("start")
+        elif sender == self.stop_timetagging:
+            self.timetagging.emit("stop")
+
+    def update_progress(self, value, iCh):
+        """update progress bar corresponding to the chanel index with a value between 0 and 1"""
+        i = 0
+        if iCh == 1:
+            i = 0
+        elif iCh == 2:
+            i = 1
+        elif iCh == 4:
+            i = 2
+        elif iCh == 8:
+            i = 3
+        self.progress_bars[i].setValue(int(value * 100))

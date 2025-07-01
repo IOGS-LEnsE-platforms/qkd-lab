@@ -120,7 +120,7 @@ class AureaHTDC():
     def close(self, iDev):
         ChronoXea.closeDevice(iDev)
 
-    def ready_channel_timetagging(self, iDev):
+    def ready_channel_timetagging(self, iDev, iCh):
         print("Sync source")
         ret = ChronoXea.setSyncSource(iDev, 1)
         if ret == 0:
@@ -131,10 +131,11 @@ class AureaHTDC():
         self.setFrequency(iDev, self.frequency)
         self.setSyncDivider(iDev)
         self.inputConfig(iDev)
-        self.setChanDelay(iDev, self.TARGET_CH)
-        self.setChanConfig(iDev, self.TARGET_CH)
-        self.armChannel(iDev, self.TARGET_CH, self.N_SAMPLE)
-        self.startChannel(iDev, self.TARGET_CH)
+        self.setChanDelay(iDev, iCh)
+        ChronoXea.set_mode(iCh, 3)
+        self.setChanConfig(iDev, iCh)
+        self.armChannel(iDev, iCh, self.N_SAMPLE)
+        self.startChannel(iDev, iCh)
 
     def ready_channel_correlation(self, iDev):
         print("Sync source")
@@ -157,8 +158,8 @@ class AureaHTDC():
         self.setContinuous(iDev, self.A_CH)
         self.setContinuous(iDev, self.B_CH)
 
-        self.armChannel(iDev, self.A_CH, -1)
-        self.armChannel(iDev, self.B_CH, -1)
+        self.armChannel(iDev, self.A_CH, self.N_SAMPLE)
+        self.armChannel(iDev, self.B_CH, self.N_SAMPLE)
 
         self.initCorrALU(iDev, self.A_CH, self.B_CH)
 
@@ -167,6 +168,7 @@ class AureaHTDC():
         self.startChannel(iDev, self.COR_CH)
         
     def getCorrelation(self, iDev):
+        self.ready_channel_correlation(iDev)
         self.acquisition = True
         if self.device_connected:
             if not self.opened:
@@ -183,6 +185,7 @@ class AureaHTDC():
             pass
 
     def getTimeTagging(self, iDev):
+        self.ready_channel_timetagging(iDev, self.TARGET_CH)
         self.acquisition = True
         if self.device_connected:
             if not self.opened:
@@ -200,35 +203,29 @@ class AureaHTDC():
 
     def getOneShotCorrelation(self, iDev):
         self.acquisition = True
+        sample = None
         if self.device_connected:
             if not self.opened:
                 if self.openDevice(iDev):
                     self.opened = True
                     print('starting')
-                    self.OneShotCorrelation(iDev)
-                else:
-                    pass
+                    sample = self.OneShotCorrelation(iDev)
             else:
-                print('starting')
-                self.OneShotCorrelation(iDev)
-        else:
-            pass
+                sample = self.OneShotCorrelation(iDev)
+        return sample
 
     def getOneShotTimeTagging(self, iDev, iCh):
         self.acquisition = True
+        sample = None
         if self.device_connected:
             if not self.opened:
                 if self.openDevice(iDev):
                     self.opened = True
                     print('starting')
-                    self.OneShotSingleChannel(iDev, iCh)
-                else:
-                    pass
+                    sample = self.OneShotSingleChannel(iDev, iCh)
             else:
-                print('starting')
-                self.OneShotSingleChannel(iDev, iCh)
-        else:
-            pass
+                sample = self.OneShotSingleChannel(iDev, iCh)
+        return sample
         
     def stopAcquisition(self):
         self.acquisition = False
@@ -246,9 +243,9 @@ class AureaHTDC():
     def CrossCorrChannelMes(self, iDev, path = None):
         self.ready_channel_correlation(iDev)
         
-        self.getCrossCorrData(iDev, path)
-        #file.close()
-        #self.file = file
+        file = self.getCrossCorrData(iDev, path)
+        file.close()
+        self.file = file
     
     def openDevice(self, iDev):
         if ChronoXea.openDevice(iDev)<0:
@@ -413,8 +410,8 @@ class AureaHTDC():
     def getCrossCorrData(self, iDev, path = None):
         i = 0
         print("path =",  path)
-        #if path is not None:
-            #file = self.createDestination(path)
+        if path is not None:
+            file = self.createDestination(path)
         print("Recover target channel data... ")
         while self.nSampleRecovered<self.nSampleToRecover and i<self.N_SAMPLE and self.acquisition:
             # Recover target channel state, to known how much data are available
@@ -439,8 +436,8 @@ class AureaHTDC():
                             time_value = round(s * ChronoXea.HTDC_RES, 3)
                             if 0 <= time_value * 1e-9 <= 1 / self.frequency:
                                 corrected_sample.append(s)
-                                """if path is not None:
-                                    file.write(str(s) + '\n')"""
+                                if path is not None:
+                                    file.write(str(s) + '\n')
                         self.parent.update_histogram(corrected_sample)
 
                     # Wait and display progression
@@ -451,8 +448,8 @@ class AureaHTDC():
         #self.parent.update_histogram(self.sampleList)
         self.parent.display_maximum()
         if path is not None:
-            save_data_in_file(self.sampleList, path)
-            #return file
+            #save_data_in_file(self.sampleList, path)
+            return file
         return None
 
     def OneShotSingleChannel(self, iDev, iCh):

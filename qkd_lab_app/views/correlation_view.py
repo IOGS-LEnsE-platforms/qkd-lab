@@ -77,7 +77,7 @@ class CorrelationView(QWidget):
             self.correlation.emit("correlation")
 
     def update_progress(self, value):
-        self.cor_bar.setValue(int(value) * 100)
+        self.cor_bar.setValue(int(value * 100))
 
 
 if __name__ == '__main__':

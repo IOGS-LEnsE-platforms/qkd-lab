@@ -52,17 +52,13 @@ class CorrelationWorker(QObject):
         tag_0, time_0 = self.convert_tag_time(data)
         f = open(file, "w")
         print("Saving data : " + file)
-        f.write("%Time Tag\n")
+        f.write("Time Tag\n")
         for i in range(len(tag_0)):
             f.write('%s\t%s\n' % (time_0[i], tag_0[i]))
 
         f.close()
 
     def convert_tag_time(self, buffer):
-        '''
-        XXXXXXXXYYYYY -> XXXXXXXX + 000YYYYY
-                           time       tag
-        '''
         tag_ = []
         time_ = []
         TDC_res = 0.013  # en ns
@@ -74,7 +70,7 @@ class CorrelationWorker(QObject):
 
 class TimeTaggingWorker(QObject):
 
-    sample_recieved = pyqtSignal(str)
+    sample_recieved = pyqtSignal(tuple)
     acquisition_finished = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -89,6 +85,9 @@ class TimeTaggingWorker(QObject):
         self.iDev = self.parent.iDev
 
         self.iDev = 0
+        self.data = [[],[],[],[]]
+
+        self.init_channels()
 
     def run(self):
         try:
@@ -98,15 +97,19 @@ class TimeTaggingWorker(QObject):
                 acquisition_proceeding = self.htdc.nSampleRecovered < self.htdc.nSampleToRecover
 
             while self._running and acquisition_proceeding:
-                for iCh in self.CH_BOB:
+                for i, iCh in enumerate(self.CH_BOB):
                     sample = self.htdc.getOneShotTimeTagging(self.iDev, iCh)
+                    if len(sample) > 0:
+                        print(type(sample[0]))
                     if sample:
-                        self.sample_recieved.emit((sample, iCh))
+                        self.sample_recieved.emit((sample, iCh, self.htdc.nSampleRecovered/self.htdc.nSampleToRecover))
+                        self.data[i] += sample
                     else:
                         print(f"No new sample on channel {iCh}")
                 if self.htdc.nSampleToRecover != -1:
                     acquisition_proceeding = self.htdc.nSampleRecovered < self.htdc.nSampleToRecover
                 time.sleep(0.01)
+            self.acquisition_finished.emit("finished")
 
         except Exception as e:
             print(f"Exception in worker run: {e}")
@@ -117,21 +120,30 @@ class TimeTaggingWorker(QObject):
     def stop(self):
         self._running = False
 
-    def save_data_in_file(self, data, file):
-        tag_0, time_0 = self.convert_tag_time(data)
-        f = open(file, "w")
-        print("Saving data : " + file)
-        f.write("%Time Tag\n")
-        for i in range(len(tag_0)):
-            f.write('%s\t%s\n' % (time_0[i], tag_0[i]))
+    def save_data_in_file(self, data, path):
+        #print(self.data)
+        print("writing")
+        tag_ = []
+        time_ = []
+        for i in range(4):
+            timetag = self.convert_tag_time(data[i])
+            tag_ += [timetag[0]]
+            time_ += [timetag[1]]
+
+        f = open(path, "w")
+        print("Saving data : " + path)
+        f.write("%" + "Time\tTag\t"*4 + "\n")
+        for i in range(max(len(tag_[0]), len(tag_[1]), len(tag_[2]), len(tag_[3]))):
+            for j in range(4):
+                if i >= len(tag_[j]):
+                    f.write('-\t-\t')
+                else:
+                    f.write('%s\t%s\t' % (time_[j][i], tag_[j][i]))
+            f.write('\n')
 
         f.close()
 
     def convert_tag_time(self, buffer):
-        '''
-        XXXXXXXXYYYYY -> XXXXXXXX + 000YYYYY
-                           time       tag
-        '''
         tag_ = []
         time_ = []
         TDC_res = 0.013  # en ns
@@ -139,3 +151,7 @@ class TimeTaggingWorker(QObject):
             tag_.append((el >> 32) & 0xffffffff)
             time_.append(round((el & 0xffffffff) * TDC_res, 3))
         return tag_, time_
+
+    def init_channels(self):
+        for iCh in self.CH_BOB:
+            self.htdc.ready_channel_timetagging(self.iDev, iCh)

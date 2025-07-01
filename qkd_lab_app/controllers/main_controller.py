@@ -19,13 +19,16 @@ class MainController(QWidget):
         else:
             self.main_view = self.parent.main_view
 
-        self.main_view.timetagging.connect(self.start_timetagging)
+        self.main_view.timetagging.connect(self.timetagging_action)
         self.main_view.correlation.connect(self.start_correlation)
 
         self.frequency = 2000000
         self.N_SAMPLE = 20000
         self.MAX_DELAY = int(1e09 / self.frequency)
         self.res = 0.013
+        self.path = os.path.dirname(os.path.abspath(".")) + r"\models\test.txt"
+
+        print(self.path)
 
         self.htdc = AureaHTDC(self)
 
@@ -36,9 +39,12 @@ class MainController(QWidget):
         self.main_view.show()
 
     def start_correlation(self):
+        self.main_view.setTo_histogram()
         if self.thread.isRunning():
             self.thread.quit()
             self.thread.wait()
+
+        self.thread = QThread()
         self.worker = CorrelationWorker(self)
         self.worker.moveToThread(self.thread)
 
@@ -46,32 +52,59 @@ class MainController(QWidget):
 
         self.thread.started.connect(self.worker.run)
         self.worker.sample_recieved.connect(self.data_action)
-        self.main_view.setTo_histogram()
+
         self.thread.start()
 
+    def stop_correlation(self):
+        if isinstance(self.worker, CorrelationWorker):
+            self.worker.stop()
+            self.thread.quit()
+            self.thread.wait()
+
     def start_timetagging(self):
+        self.main_view.setTo_histogram()
+        QApplication.processEvents()
         if self.thread.isRunning():
             self.thread.quit()
             self.thread.wait()
-        self.htdc.ready_channel_timetagging(self.iDev)
+
         self.worker = TimeTaggingWorker(self)
 
         self.worker.moveToThread(self.thread)
 
         self.thread.started.connect(self.worker.run)
         self.worker.sample_recieved.connect(self.data_action)
-        self.main_view.setTo_histogram()
+        self.worker.acquisition_finished.connect(self.save_timetagging_data)
+
         self.thread.start()
 
+    def stop_timetagging(self):
+        if isinstance(self.worker, TimeTaggingWorker):
+            self.worker.stop()
+            self.thread.quit()
+            self.thread.wait()
+
     def data_action(self, event):
-        event_list = event.split("=")
-        if event_list[0] == "correlation":
-            self.update_data(event_list[1], 0)
-        elif event_list[0] == "time tagging":
-            self.update_data(event_list[1], int(event_list[2]))
+        if type(event) == list:
+            pass
+            #self.update_data(event_list[1], 0)
+        elif type(event) == tuple:
+            print(event)
+            self.main_view.update_timetagging_progress(event[2], int(event[1]))
+            self.update_data(event[0], int(event[1]))
+
+    def timetagging_action(self, event):
+        if event == "start":
+            self.start_timetagging()
+        elif event == "stop":
+            self.stop_timetagging()
+
+    def save_timetagging_data(self):
+        self.worker.save_data_in_file(self.worker.data, self.path)
 
     def update_data(self, data, iCh):
         self.main_view.update_data(data, iCh)
+        QApplication.processEvents()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

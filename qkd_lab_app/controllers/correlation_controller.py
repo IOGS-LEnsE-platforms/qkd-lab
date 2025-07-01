@@ -27,7 +27,7 @@ class correlationController(QWidget):
         self.model = ProcessModel(self)
         
         self.corr_button = QPushButton('lancer l\'acquisition')
-        self.corr_button.clicked.connect(self.model.htdc.getTimeTagging)
+        self.corr_button.clicked.connect(self.model.htdc.getCorrelation)
         
         self.stop_button = QPushButton('stopper l\'acquisition')
         self.stop_button.clicked.connect(self.stopAcquisition)
