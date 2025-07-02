@@ -54,6 +54,12 @@ class GraphView(QWidget):
         self.x = np.linspace(0, len(self.data), len(self.data))
         self.display_plot()
 
+    def clear(self):
+        self.data = []
+        self.ax.clear()
+        self.ax.set_title(self.title)
+        self.canvas.draw()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

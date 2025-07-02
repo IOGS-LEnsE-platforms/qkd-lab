@@ -32,6 +32,8 @@ class CorrelationWorker(QObject):
 
         self.iDev = self.parent.iDev
 
+        self.CH_BOB = self.parent.CH_BOB
+
     def run(self):
         if self.htdc.nSampleToRecover == -1:
             acquisition_proceeding = True
@@ -80,7 +82,8 @@ class TimeTaggingWorker(QObject):
         self.htdc = self.parent.htdc
         self._running = True
 
-        self.CH_BOB = [1, 2, 4, 8]
+        self.CH_BOB = self.parent.CH_BOB
+        self.blocked = False
 
         self.iDev = self.parent.iDev
 
@@ -88,13 +91,20 @@ class TimeTaggingWorker(QObject):
         self.data = [[],[],[],[]]
 
         self.init_channels()
+        self.parent.run_back.connect(self.loop)
+
+    def loop(self):
+        self.blocked = False
 
     def run(self):
         try:
-            if self.htdc.nSampleToRecover == -1:
-                acquisition_proceeding = True
-            else:
-                acquisition_proceeding = self.htdc.nSampleRecovered < self.htdc.nSampleToRecover
+            acquisition_proceeding = True
+            for iCh in self.CH_BOB:
+                self.sample_recieved.emit(([], iCh, 0))
+                if self.htdc.nSampleToRecover[iCh] == -1:
+                    acquisition_proceeding &= True
+                else:
+                    acquisition_proceeding &= self.htdc.nSampleRecovered[iCh] < self.htdc.nSampleToRecover[iCh]
 
             while self._running and acquisition_proceeding:
                 for i, iCh in enumerate(self.CH_BOB):
@@ -102,13 +112,20 @@ class TimeTaggingWorker(QObject):
                     if len(sample) > 0:
                         print(type(sample[0]))
                     if sample:
-                        self.sample_recieved.emit((sample, iCh, self.htdc.nSampleRecovered/self.htdc.nSampleToRecover))
+                        self.sample_recieved.emit((sample, iCh, self.htdc.nSampleRecovered[iCh]/self.htdc.nSampleToRecover[iCh]))
+                        self.blocked = True
+                        while self.blocked:
+                            time.sleep(0.001)
+                        #QApplication.processEvents()
                         self.data[i] += sample
                     else:
                         print(f"No new sample on channel {iCh}")
-                if self.htdc.nSampleToRecover != -1:
-                    acquisition_proceeding = self.htdc.nSampleRecovered < self.htdc.nSampleToRecover
-                time.sleep(0.01)
+                acquisition_proceeding = True
+                for iCh in self.CH_BOB:
+                    if self.htdc.nSampleToRecover[iCh] != -1:
+                        acquisition_proceeding &= self.htdc.nSampleRecovered[iCh] < self.htdc.nSampleToRecover[iCh]
+                #time.sleep(0.01)
+
             self.acquisition_finished.emit("finished")
 
         except Exception as e:

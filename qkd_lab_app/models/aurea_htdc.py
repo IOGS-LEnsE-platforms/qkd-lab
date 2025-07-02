@@ -68,6 +68,8 @@ class AureaHTDC():
         self.N_SAMPLE = self.parent.N_SAMPLE
         self.TARGET_CH = int(2)
         self.frequency = self.parent.frequency
+        self.nSampleRecovered = {}
+        self.nSampleToRecover = {}
         
         ### Correlation channels
         self.A_CH = int(4)
@@ -309,7 +311,7 @@ class AureaHTDC():
             print("\nChannel Armed\n")
         else:
             print("\nArm Channel: error\n")
-        self.nSampleToRecover=N
+        self.nSampleToRecover[iCh] = N
         print("Waiting stable sync signal... ")
         #time.sleep()
     
@@ -318,7 +320,7 @@ class AureaHTDC():
         ret = ChronoXea.startChannel(iDev, iCh)
         if ret < 0: print(" -> failed\n")
         else: print(" -> done\n")
-        self.nSampleRecovered = 0
+        self.nSampleRecovered[iCh] = 0
         self.sampleList=[]
         
     def stopChannel(self, iDev, iCh):
@@ -347,13 +349,13 @@ class AureaHTDC():
         #if path is not None:
             #file = self.createDestination(path)
         print("Recover target channel data... ")
-        while self.nSampleRecovered<self.nSampleToRecover and i<self.N_SAMPLE and self.acquisition:
+        while self.nSampleRecovered[self.TARGET_CH]<self.nSampleToRecover[self.TARGET_CH] and i<self.N_SAMPLE and self.acquisition:
             # Recover target channel state, to known how much data are available
-            ret, state, self.nSampleToRecover, nSample = ChronoXea.getChannelState(iDev, self.TARGET_CH)
+            ret, state, self.nSampleToRecover[self.TARGET_CH], nSample = ChronoXea.getChannelState(iDev, self.TARGET_CH)
             if ret == 0:
                   print("\33[0m\tnSample : {}".format(nSample))
                   i+=1
-                  self.nSampleRecovered += nSample
+                  self.nSampleRecovered[self.TARGET_CH] += nSample
 
                   # Get channel data
                   ret, n, sample = ChronoXea.getChannelData(iDev, self.TARGET_CH)
@@ -372,7 +374,7 @@ class AureaHTDC():
                           self.parent.update_histogram(corrected_sample)"""
                       # Wait and display progression
                       #time.sleep(0.1)
-                      print("\033[33m\r State: {} | {}/{} data recovered""\033[0m".format(state,self.nSampleRecovered,self.nSampleToRecover))
+                      print("\033[33m\r State: {} | {}/{} data recovered""\033[0m".format(state,self.nSampleRecovered[self.TARGET_CH],self.nSampleToRecover[self.TARGET_CH]))
                   else: print("\33[0m\nGet Channel Data: error\n")
             else: print("\nchannel State: error\n")
         if path is not None:
@@ -413,14 +415,14 @@ class AureaHTDC():
         if path is not None:
             file = self.createDestination(path)
         print("Recover target channel data... ")
-        while self.nSampleRecovered<self.nSampleToRecover and i<self.N_SAMPLE and self.acquisition:
+        while self.nSampleRecovered[self.COR_CH]<self.nSampleToRecover[self.COR_CH] and i<self.N_SAMPLE and self.acquisition:
             # Recover target channel state, to known how much data are available
-            ret, state, self.nSampleToRecover, nSample = ChronoXea.getChannelState(iDev, self.COR_CH) #4294967295=-1
+            ret, state, self.nSampleToRecover[self.COR_CH], nSample = ChronoXea.getChannelState(iDev, self.COR_CH) #4294967295=-1
             #print(ret, state, nSample)
             if ret == 0:
                 i+=1
 
-                self.nSampleRecovered += nSample
+                self.nSampleRecovered[self.COR_CH] += nSample
                 
                 # Get channel data
                 ret, n, sample = ChronoXea.getCrossCorrelationData(iDev)
@@ -442,7 +444,7 @@ class AureaHTDC():
 
                     # Wait and display progression
                     #time.sleep(0.5)
-                    print("\033[33m\r State: {} | {}/{} data recovered\033[0m".format(state,self.nSampleRecovered,self.nSampleToRecover))
+                    print("\033[33m\r State: {} | {}/{} data recovered\033[0m".format(state,self.nSampleRecovered[self.COR_CH],self.nSampleToRecover[self.COR_CH]))
                 else: print("\nGet Channel Data: error\n")
             else: print("\nchannel State: error\n")
         #self.parent.update_histogram(self.sampleList)
@@ -454,11 +456,11 @@ class AureaHTDC():
 
     def OneShotSingleChannel(self, iDev, iCh):
         corrected_sample = []
-        ret, state, self.nSampleToRecover, nSample = ChronoXea.getChannelState(iDev, iCh)
+        ret, state, self.nSampleToRecover[iCh], nSample = ChronoXea.getChannelState(iDev, iCh)
         if ret == 0:
             print("\33[0m\tnSample : {}".format(nSample))
 
-            self.nSampleRecovered += nSample
+            self.nSampleRecovered[iCh] += nSample
 
             # Get channel data
             ret, n, sample = ChronoXea.getChannelData(iDev, iCh)
@@ -466,7 +468,6 @@ class AureaHTDC():
             if ret == 0:
                 # Store result if data available
                 if n > 0:
-                    self.sampleList += sample
                     corrected_sample = []
                     for s in sample:
                         time_value = round(s * ChronoXea.HTDC_RES, 3)
@@ -475,8 +476,8 @@ class AureaHTDC():
 
                 # Wait and display progression
                 #time.sleep(0.1)
-                print("\033[33m\r State: {} | {}/{} data recovered\033[0m".format(state, self.nSampleRecovered,
-                                                                                  self.nSampleToRecover))
+                print("\033[33m\r State: {} | {}/{} data recovered\033[0m".format(state, self.nSampleRecovered[iCh],
+                                                                                  self.nSampleToRecover[iCh]))
             else:
                 print("\nGet Channel Data: error\n")
         else:
@@ -485,12 +486,12 @@ class AureaHTDC():
 
     def OneShotCorrelation(self, iDev):
         corrected_sample = []
-        ret, state, self.nSampleToRecover, nSample = ChronoXea.getChannelState(iDev, self.COR_CH)  # 4294967295=-1
+        ret, state, self.nSampleToRecover[self.COR_CH], nSample = ChronoXea.getChannelState(iDev, self.COR_CH)  # 4294967295=-1
         # print(ret, state, nSample)
         if ret == 0:
             print("\33[0m\tnSample : {}".format(nSample))
 
-            self.nSampleRecovered += nSample
+            self.nSampleRecovered[self.COR_CH] += nSample
 
             # Get channel data
             ret, n, sample = ChronoXea.getCrossCorrelationData(iDev)
@@ -498,7 +499,6 @@ class AureaHTDC():
             if ret == 0:
                 # Store result if data available
                 if n > 0:
-                    self.sampleList += sample
                     corrected_sample = []
                     for s in sample:
                         time_value = round(s * ChronoXea.HTDC_RES, 3)
@@ -507,8 +507,8 @@ class AureaHTDC():
 
                 # Wait and display progression
                 #time.sleep(0.1)
-                print("\033[33m\r State: {} | {}/{} data recovered\033[0m".format(state, self.nSampleRecovered,
-                                                                                  self.nSampleToRecover))
+                print("\033[33m\r State: {} | {}/{} data recovered\033[0m".format(state, self.nSampleRecovered[self.COR_CH],
+                                                                                  self.nSampleToRecover[self.COR_CH]))
             else:
                 print("\nGet Channel Data: error\n")
         else:

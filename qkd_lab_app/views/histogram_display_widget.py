@@ -93,8 +93,10 @@ class HistogramDisplayWidget(QWidget):
         self.title = title
 
     def clear(self):
-        self.data = []
+        self.hist_dict = {}
         self.ax.clear()
+        self.ax.set_title(self.title)
+        self.canvas.draw()
 
     def find_maximum(self):
         i_max = max(self.hist_dict.values())

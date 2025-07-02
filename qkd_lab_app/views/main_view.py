@@ -38,6 +38,10 @@ class DisplayView(QWidget):
         if index == 1:
             self.histogram.update_data(new_data)
 
+    def clear(self):
+        self.histogram.clear()
+        self.graph.clear()
+
     def set_index(self, index):
         self.stack.setCurrentIndex(index)
 
@@ -121,27 +125,34 @@ class MainView(QWidget):
     def update_data(self, new_data, index):
         '''This function allows for independent graph update. The selected graph is represented by an index 0-3
         |--------|--------|
-        |  0     | 1      |
+        |  1     | 2      |
         |        |        |
         |--------|--------|
-        |  2     | 3      |
+        |  4     | 8      |
         |        |        |
         |--------|--------|
         '''
-        if index == 0:
+        print("graphs update done")
+        if index == 1:
             self.top_left_display.update_data(new_data)
-        elif index == 1:
-            self.top_right_display.update_data(new_data)
         elif index == 2:
+            self.top_right_display.update_data(new_data)
+        elif index == 4:
             self.bottom_left_display.update_data(new_data)
-        elif index == 3:
+        elif index == 8:
             self.bottom_right_display.update_data(new_data)
 
     def update_correlation_progress(self, value):
         self.correlation.update_progress(value)
 
     def update_timetagging_progress(self, value, iCh):
-        self.timetagging.update_progress(value, iCh)
+        self.time_tagging_view.update_progress(value, iCh)
+
+    def clear(self):
+        self.top_left_display.clear()
+        self.top_right_display.clear()
+        self.bottom_left_display.clear()
+        self.bottom_right_display.clear()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QThread
+from PyQt6.QtCore import QThread, pyqtSlot
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QApplication, QVBoxLayout
 import sys, os
 
@@ -9,13 +9,18 @@ from views.main_view import MainView
 import time
 
 class MainController(QWidget):
+
+    update_progress = pyqtSignal(float, int)
+    update_graphs = pyqtSignal(list, int)
+    run_back = pyqtSignal(str)
+
     def __init__(self, parent = None):
         super().__init__()
         self.parent = parent
 
         self.thread = QThread(self)
         if __name__ == "__main__":
-            self.main_view = MainView()
+            self.main_view = MainView(self)
         else:
             self.main_view = self.parent.main_view
 
@@ -23,12 +28,14 @@ class MainController(QWidget):
         self.main_view.correlation.connect(self.start_correlation)
 
         self.frequency = 2000000
-        self.N_SAMPLE = 20000
+        self.N_SAMPLE = 10000
         self.MAX_DELAY = int(1e09 / self.frequency)
         self.res = 0.013
         self.path = os.path.dirname(os.path.abspath(".")) + r"\models\test.txt"
 
         print(self.path)
+
+        self.CH_BOB = [1, 2, 4, 8]
 
         self.htdc = AureaHTDC(self)
 
@@ -38,13 +45,17 @@ class MainController(QWidget):
 
         self.main_view.show()
 
+        self.update_progress.connect(self.main_view.update_timetagging_progress)
+        self.update_graphs.connect(self.main_view.update_data)
+
     def start_correlation(self):
         self.main_view.setTo_histogram()
+        self.main_view.clear()
         if self.thread.isRunning():
             self.thread.quit()
             self.thread.wait()
 
-        self.thread = QThread()
+        #self.thread = QThread()
         self.worker = CorrelationWorker(self)
         self.worker.moveToThread(self.thread)
 
@@ -63,6 +74,7 @@ class MainController(QWidget):
 
     def start_timetagging(self):
         self.main_view.setTo_histogram()
+        self.main_view.clear()
         QApplication.processEvents()
         if self.thread.isRunning():
             self.thread.quit()
@@ -73,8 +85,8 @@ class MainController(QWidget):
         self.worker.moveToThread(self.thread)
 
         self.thread.started.connect(self.worker.run)
-        self.worker.sample_recieved.connect(self.data_action)
-        self.worker.acquisition_finished.connect(self.save_timetagging_data)
+        self.worker.sample_recieved.connect(self.data_action, Qt.ConnectionType.QueuedConnection)
+        self.worker.acquisition_finished.connect(self.save_timetagging_data, Qt.ConnectionType.QueuedConnection)
 
         self.thread.start()
 
@@ -84,14 +96,18 @@ class MainController(QWidget):
             self.thread.quit()
             self.thread.wait()
 
+
     def data_action(self, event):
         if type(event) == list:
             pass
             #self.update_data(event_list[1], 0)
         elif type(event) == tuple:
             print(event)
-            self.main_view.update_timetagging_progress(event[2], int(event[1]))
-            self.update_data(event[0], int(event[1]))
+            print("graphs update called")
+            self.update_graphs.emit(event[0], int(event[1]))
+            print("progress update called")
+            self.update_progress.emit(event[2], int(event[1]))
+            self.run_back.emit("run")
 
     def timetagging_action(self, event):
         if event == "start":
@@ -104,7 +120,7 @@ class MainController(QWidget):
 
     def update_data(self, data, iCh):
         self.main_view.update_data(data, iCh)
-        QApplication.processEvents()
+        #QApplication.processEvents()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
