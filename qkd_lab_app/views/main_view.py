@@ -148,6 +148,10 @@ class MainView(QWidget):
     def update_timetagging_progress(self, value, iCh):
         self.time_tagging_view.update_progress(value, iCh)
 
+    def update_devices(self, available_dict, all_dict):
+        self.top_widget.free_cpc.find_devices_list(available_dict)
+        self.top_widget.free_cpc.init_checkbox_display(all_dict)
+
     def clear(self):
         self.top_left_display.clear()
         self.top_right_display.clear()

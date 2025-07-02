@@ -5,8 +5,8 @@ import sys, os
 sys.path.append(os.path.abspath(".."))
 
 from models.workers import *
+from models.config_dict import ConfigDict
 from views.main_view import MainView
-import time
 
 class MainController(QWidget):
 
@@ -17,6 +17,10 @@ class MainController(QWidget):
     def __init__(self, parent = None):
         super().__init__()
         self.parent = parent
+
+        self.config_dict = ConfigDict(os.path.dirname(os.path.abspath("."))+ r"\assets")
+        self.default_params = self.config_dict.default_params
+        self.serial_dict = self.config_dict.serial_dict
 
         self.thread = QThread(self)
         if __name__ == "__main__":
@@ -29,15 +33,29 @@ class MainController(QWidget):
 
         self.frequency = 2000000
         self.N_SAMPLE = 10000
-        self.MAX_DELAY = int(1e09 / self.frequency)
         self.res = 0.013
+
+        if "TDC Internal Frequency" in self.default_params.keys():
+            self.frequency = int(self.default_params["TDC Internal Frequency"])
+        if "Number of samples" in self.default_params.keys():
+            self.N_SAMPLE = int(self.default_params["Number of samples"])
+        if "TDC Time Resolution" in self.default_params.keys():
+            self.res = float(self.default_params["TDC Time Resolution"])
+
+        self.MAX_DELAY = int(1e09 / self.frequency)
+
         self.path = os.path.dirname(os.path.abspath(".")) + r"\models\test.txt"
 
         print(self.path)
 
         self.CH_BOB = [1, 2, 4, 8]
 
+        self.cpc = AureaCPC(self)
+        self.iDev_dict = self.cpc.iDev_dict
+
         self.htdc = AureaHTDC(self)
+
+        self.find_devices_dict()
 
         self.iDev = 0
 
@@ -121,6 +139,16 @@ class MainController(QWidget):
     def update_data(self, data, iCh):
         self.main_view.update_data(data, iCh)
         #QApplication.processEvents()
+
+    def find_devices_dict(self):
+        devices_dict = {}
+        for i in self.serial_dict.keys():
+            device = self.serial_dict[i]
+            if device in self.iDev_dict.keys():
+                devices_dict[i] = device
+        print(self.serial_dict)
+        print(devices_dict)
+        self.main_view.update_devices(devices_dict, self.serial_dict)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

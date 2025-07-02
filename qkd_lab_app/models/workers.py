@@ -17,6 +17,7 @@ sys.path.append(os.path.abspath("."))
 import time
 
 from models.aurea_htdc import AureaHTDC
+from models.aurea_cpc import AureaCPC
 
 class CorrelationWorker(QObject):
 

@@ -1,7 +1,16 @@
 HTDC_RES;0.013
-a
-a
-a
-a
-a
-a
+
+% Paramètres des CPC
+Number of CPCs;7
+
+CPC_2;SN_22840254030
+CPC_3;SN_22830254030
+CPC_4;SN_22810254030
+CPC_5;SN_22880254030
+CPC_6;SN_24259025403
+CPC_7;SN_24260025403
+
+% Paramètres du TDC
+TDC Internal Frequency;2000000
+Number of Samples;10000
+TDC Time Resolution;0.013
