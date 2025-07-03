@@ -19,6 +19,10 @@ class FreeCPCView(QWidget):
         MAX_COUNTS = 5000000
         MIN_COUNTS = 10
         INI_COUNTS = 500
+        if self.parent is not None:
+            MIN_COUNTS = self.parent.min_graph_span
+            MAX_COUNTS = self.parent.max_graph_span
+            INI_COUNTS = self.parent.ini_graph_span
 
         self.devices_list = ['2', '3', '4', '5', '6', '7']
         self.stack = []
@@ -34,7 +38,6 @@ class FreeCPCView(QWidget):
         self.combo_box = QComboBox()
         self.combo_box.addItems(self.devices_list)
         self.index_layout.addWidget(self.combo_box)
-        self.combo_box.currentIndexChanged.connect(self.update_action)
 
         self.checkboxes_layout = QGridLayout()
         self.checkboxes_layout.setRowStretch(0, 1)
@@ -95,8 +98,10 @@ class FreeCPCView(QWidget):
 
     def slider_action(self):
         self.timespan_label.setText(f"Graph max counts : {self.timespan_slider.value()}")
+        self.live_signal.emit(("graph span", self.timespan_slider.value()))
 
     def update_action(self):
+        print("starting live")
         self.live_signal.emit(("start",))
 
     def init_checkbox_display(self, devices_dict):

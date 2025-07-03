@@ -17,11 +17,8 @@ class DisplayView(QWidget):
 
         self.layout = QVBoxLayout()
 
-        self.MAX_DELAY = 100  # A modifier
-        self.res = 0.013 # A modifier
-
-        self.histogram = HistogramDisplayWidget(self)
-        self.graph = GraphView(self)
+        self.histogram = HistogramDisplayWidget(self.parent)
+        self.graph = GraphView(self.parent)
 
         self.stack = QStackedWidget()
         self.stack.addWidget(self.graph)
@@ -30,6 +27,13 @@ class DisplayView(QWidget):
 
         self.layout.addWidget(self.stack)
         self.setLayout(self.layout)
+
+    def isGraph(self):
+        index = self.stack.currentIndex()
+        if index == 0:
+            return True
+        else:
+            return False
 
     def update_data(self, new_data):
         index = self.stack.currentIndex()
@@ -45,6 +49,14 @@ class DisplayView(QWidget):
     def set_index(self, index):
         self.stack.setCurrentIndex(index)
 
+    def set_title(self, title):
+        print("in displayview")
+        index = self.stack.currentIndex()
+        if index == 0:
+            self.graph.title = title
+        if index == 1:
+            self.histogram.title = title
+
 
 class TopWidget(QWidget):
     def __init__(self, parent = None):
@@ -53,7 +65,7 @@ class TopWidget(QWidget):
         self.layout = QVBoxLayout()
 
         self.title = TitleView(self)
-        self.free_cpc = FreeCPCView(self)
+        self.free_cpc = FreeCPCView(self.parent)
 
         self.free_cpc.live_signal.connect(self.parent.live_action)
         self.layout.addWidget(self.title)
@@ -159,6 +171,23 @@ class MainView(QWidget):
         self.top_right_display.clear()
         self.bottom_left_display.clear()
         self.bottom_right_display.clear()
+
+    def set_span(self, index):
+        self.top_left_display.graph.MAX_INDEX = index
+        self.top_right_display.graph.MAX_INDEX = index
+        self.bottom_left_display.graph.MAX_INDEX = index
+        self.bottom_right_display.graph.MAX_INDEX = index
+
+    def set_title(self, title, index):
+        print("in main view")
+        if index == 0:
+            self.top_left_display.set_title(title)
+        elif index == 1:
+            self.top_right_display.set_title(title)
+        elif index == 2:
+            self.bottom_left_display.set_title(title)
+        elif index == 3:
+            self.bottom_right_display.set_title(title)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -30,26 +30,37 @@ class CorrelationWorker(QObject):
 
         self.htdc = self.parent.htdc
         self._running = True
+        self.finished = False
 
         self.iDev = self.parent.htdc_iDev
 
         self.CH_BOB = self.parent.CH_BOB
 
     def run(self):
+        self.finished = False
         if self.htdc.nSampleToRecover == -1:
             acquisition_proceeding = True
         else:
             acquisition_proceeding = self.htdc.nSampleRecovered < self.htdc.nSampleToRecover
+
         while self._running and acquisition_proceeding:
             sample = self.htdc.getOneShotCorrelation(self.iDev)
             self.sample_recieved.emit(f"correlation={sample}")
             if self.htdc.nSampleToRecover != -1:
                 acquisition_proceeding = self.htdc.nSampleRecovered < self.htdc.nSampleToRecover
         self.acquisition_finished.emit("finished")
-        self._running = False
+        self.finished = True
 
     def stop(self):
+        try:
+            self.parent.run_back.disconnect()
+        except TypeError:
+            pass
+        if not self._running:
+            self.finished = True
         self._running = False
+        while not self.finished:
+            time.sleep(0.001)
 
     def save_data_in_file(self, data, file):
         tag_0, time_0 = self.convert_tag_time(data)
@@ -85,11 +96,18 @@ class TimeTaggingWorker(QObject):
 
         self.CH_BOB = self.parent.CH_BOB
         self.blocked = False
+        self.finished = False
+        self.stopping = False
 
         self.iDev = self.parent.htdc_iDev
 
         self.iDev = 0
         self.data = [[],[],[],[]]
+        self.htdc_overload = 1000
+        try:
+            self.htdc_overload = self.parent.htdc_overload
+        except Exception as e:
+            print(f"\033[31m{type(self.parent)} has no attribute 'htdc_overload'\033[0m")
 
         self.init_channels()
         self.parent.run_back.connect(self.loop)
@@ -99,6 +117,7 @@ class TimeTaggingWorker(QObject):
 
     def run(self):
         try:
+            self.finished = False
             acquisition_proceeding = True
             for iCh in self.CH_BOB:
                 self.sample_recieved.emit(([], iCh, 0))
@@ -110,14 +129,15 @@ class TimeTaggingWorker(QObject):
             while self._running and acquisition_proceeding:
                 for i, iCh in enumerate(self.CH_BOB):
                     sample = self.htdc.getOneShotTimeTagging(self.iDev, iCh)
-                    if len(sample) > 0:
-                        print(type(sample[0]))
                     if sample:
+                        if len(sample) > self.htdc_overload:
+                            sample = sample[:self.htdc_overload]
                         self.sample_recieved.emit(("time tagging", sample, i, self.htdc.nSampleRecovered[iCh]/self.htdc.nSampleToRecover[iCh]))
+
                         self.blocked = True
-                        while self.blocked:
-                            time.sleep(0.001)
-                        #QApplication.processEvents()
+                        while self.blocked and self._running:
+                            time.sleep(0.1)
+
                         self.data[i] += sample
                     else:
                         print(f"No new sample on channel {iCh}")
@@ -127,19 +147,36 @@ class TimeTaggingWorker(QObject):
                         acquisition_proceeding &= self.htdc.nSampleRecovered[iCh] < self.htdc.nSampleToRecover[iCh]
                 #time.sleep(0.01)
 
-            self.acquisition_finished.emit("finished")
+            if not self.stopping:
+                self.acquisition_finished.emit("finished")
+            self.finished = True
+            self.stop()
 
         except Exception as e:
             print(f"\033[31mException in worker run: {e}\033[0m")
         finally:
-            self.acquisition_finished.emit("finished")
-            self._running = False
+            if not self.stopping:
+                self.acquisition_finished.emit("finished")
+            self.finished = True
+            self.stop()
 
     def stop(self):
+        try:
+            self.parent.run_back.disconnect()
+        except TypeError:
+            pass
+        print("stopping timetagging")
+        self.stopping = True
+        if not self._running:
+            self.finished = True
         self._running = False
+        while not self.finished:
+            print("not finished")
+            time.sleep(0.001)
 
     def save_data_in_file(self, data, path):
         #print(self.data)
+        self._running = True
         print("writing")
         tag_ = []
         time_ = []
@@ -160,6 +197,8 @@ class TimeTaggingWorker(QObject):
             f.write('\n')
 
         f.close()
+        self._running = False
+        self.finished = True
 
     def convert_tag_time(self, buffer):
         tag_ = []
@@ -189,6 +228,7 @@ class liveWorker(QObject):
 
         self._running = True
         self.blocked = False
+        self.finished = False
 
         self.init_channels()
         self.parent.run_back.connect(self.loop)
@@ -198,24 +238,37 @@ class liveWorker(QObject):
 
     def run(self):
         try:
+            self.finished = False
             while self._running:
                 for i, iDev in enumerate(self.cpc_iDev):
-                    _, cnt = self.cpc.get_data(iDev)
-                    if cnt:
-                        self.sample_recieved.emit(("live", cnt, i))
+                    _, cnt = self.cpc.getData(iDev)
+                    self.sample_recieved.emit(("live", [cnt], i))
 
                     self.blocked = True
-                    while self.blocked:
+                    while self.blocked and self._running:
                         time.sleep(0.001)
-            self.acquisition_finished.emit("finished")
+                time.sleep(0.01)
+            self.finished = True
+            #self.acquisition_finished.emit("finished")
         except Exception as e:
             print(f"\033[31mException in worker run: {e}\033[0m")
         finally:
-            self.acquisition_finished.emit("finished")
             self._running = False
+            self.acquisition_finished.emit("finished")
 
     def stop(self):
+        print("stopping live")
+        try:
+            self.parent.run_back.disconnect()
+        except TypeError:
+            pass
+
+        if not self._running:
+            self.finished = True
         self._running = False
+        self.cpc.closeDevices()
+        while not self.finished:
+            time.sleep(0.001)
 
     def init_channels(self):
         self.cpc.ready_devices()

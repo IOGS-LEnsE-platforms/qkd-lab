@@ -22,15 +22,6 @@ class MainController(QWidget):
         self.default_params = self.config_dict.default_params
         self.serial_dict = self.config_dict.serial_dict
 
-        self.thread = QThread(self)
-        if __name__ == "__main__":
-            self.main_view = MainView(self)
-        else:
-            self.main_view = self.parent.main_view
-
-        self.main_view.timetagging.connect(self.timetagging_action)
-        self.main_view.correlation.connect(self.start_correlation)
-
         self.frequency = 2000000
         self.N_SAMPLE = 10000
         self.res = 0.013
@@ -41,8 +32,25 @@ class MainController(QWidget):
             self.N_SAMPLE = int(self.default_params["Number of Samples"])
         if "TDC Time Resolution" in self.default_params.keys():
             self.res = float(self.default_params["TDC Time Resolution"])
+        if "Initial Graph Span" in self.default_params.keys():
+            self.ini_graph_span = int(self.default_params["Initial Graph Span"])
+        if "Maximum Graph Span" in self.default_params.keys():
+            self.max_graph_span = int(self.default_params["Maximum Graph Span"])
+        if "Minimum Graph Span" in self.default_params.keys():
+            self.min_graph_span = int(self.default_params["Minimum Graph Span"])
+        if "HTDC Overload" in self.default_params.keys():
+            self.htdc_overload = int(self.default_params["HTDC Overload"])
 
         self.MAX_DELAY = int(1e09 / self.frequency)
+
+        self.thread = QThread(self)
+        if __name__ == "__main__":
+            self.main_view = MainView(self)
+        else:
+            self.main_view = self.parent.main_view
+
+        self.main_view.timetagging.connect(self.timetagging_action)
+        self.main_view.correlation.connect(self.start_correlation)
 
         self.path = os.path.dirname(os.path.abspath(".")) + r"\models\test.txt"
 
@@ -69,14 +77,16 @@ class MainController(QWidget):
         self.update_graphs.connect(self.main_view.update_data)
 
     def start_correlation(self):
-        self.main_view.clear()
-        self.main_view.setTo_histogram()
         if self.worker is not None:
             self.worker.stop()
 
         if self.thread.isRunning():
             self.thread.quit()
             self.thread.wait()
+
+        self.main_view.clear()
+        self.main_view.setTo_histogram()
+        self.main_view.clear()
 
         #self.thread = QThread()
         self.worker = CorrelationWorker(self)
@@ -96,15 +106,18 @@ class MainController(QWidget):
             self.thread.wait()
 
     def start_timetagging(self):
-        self.main_view.clear()
-        self.main_view.setTo_histogram()
-        QApplication.processEvents()
         if self.worker is not None:
             self.worker.stop()
 
         if self.thread.isRunning():
             self.thread.quit()
             self.thread.wait()
+
+        print("starting time tagging")
+        self.main_view.clear()
+        self.main_view.setTo_histogram()
+        self.main_view.clear()
+        QApplication.processEvents()
 
         self.worker = TimeTaggingWorker(self)
 
@@ -123,10 +136,6 @@ class MainController(QWidget):
             self.thread.wait()
 
     def start_live(self):
-        self.init_cpc()
-        self.main_view.clear()
-        self.main_view.setTo_graph()
-        QApplication.processEvents()
         if self.worker is not None:
             self.worker.stop()
 
@@ -134,9 +143,19 @@ class MainController(QWidget):
             self.thread.quit()
             self.thread.wait()
 
+        self.main_view.clear()
+        self.cpc = AureaCPC(self)
+        self.main_view.setTo_graph()
+        self.main_view.clear()
+        QApplication.processEvents()
+        print("view updated")
+
         self.worker = liveWorker(self)
+        self.main_view.clear()
+        print("worker initialized")
 
         self.worker.moveToThread(self.thread)
+        print("connected to thread")
 
         self.thread.started.connect(self.worker.run)
         self.worker.sample_recieved.connect(self.data_action, Qt.ConnectionType.QueuedConnection)
@@ -162,8 +181,9 @@ class MainController(QWidget):
             self.update_progress.emit(event[3], int(event[2]))
             self.run_back.emit("run")
         elif event[0] == "live":
-            print("graphs update called")
+            print("live graphs update called")
             self.update_graphs.emit(event[1], int(event[2]))
+            self.run_back.emit("run")
 
     def timetagging_action(self, event):
         if event == "start":
@@ -173,6 +193,7 @@ class MainController(QWidget):
 
     def save_timetagging_data(self):
         self.worker.save_data_in_file(self.worker.data, self.path)
+        self.worker.stop()
 
     def update_data(self, data, iCh):
         self.main_view.update_data(data, iCh)
@@ -200,8 +221,10 @@ class MainController(QWidget):
         stack that is usable by the cpc in order to know what acquisition must be done
         '''
         self.cpc_iDev = []
-        for i in list_indexes:
-            self.cpc_iDev.append(self.index_dict[i])
+        for i, index in enumerate(list_indexes):
+            self.cpc_iDev.append(self.index_dict[index])
+            print("setting title")
+            self.main_view.set_title("CPC " + str(index), i)
 
     def init_cpc(self):
         self.cpc = AureaCPC(self)
@@ -214,6 +237,10 @@ class MainController(QWidget):
             self.start_live()
         if event[0] == "checkbox":
             self.order_cpc_displays(event[1])
+            if isinstance(self.worker, liveWorker):
+                self.worker.cpc_iDev = self.cpc_iDev
+        if event[0] == "graph span":
+            self.main_view.set_span(event[1])
 
 
 if __name__ == "__main__":

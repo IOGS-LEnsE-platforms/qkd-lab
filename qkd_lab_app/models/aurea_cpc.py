@@ -20,6 +20,7 @@ if not os.path.isfile(dllpath):
 
 
 import CPC_wrapper as CPC
+import time
 
 
 class AureaCPC():

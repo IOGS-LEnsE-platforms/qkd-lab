@@ -1,5 +1,3 @@
-HTDC_RES;0.013
-
 % Paramètres des CPC
 Number of CPCs;7
 
@@ -11,6 +9,15 @@ CPC_6;SN_24259025403
 CPC_7;SN_24260025403
 
 % Paramètres du TDC
+HTDC_RES;0.013
 TDC Internal Frequency;2000000
 Number of Samples;40000
 TDC Time Resolution;0.013
+
+%Limite de la taille des échantillons pour éviter les freeze times
+HTDC Overload;500
+
+% Paramètres des graphes
+Initial Graph Span;1000
+Maximum Graph Span;50000
+Minimum Graph Span;10

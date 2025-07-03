@@ -15,11 +15,15 @@ class GraphView(QWidget):
 
         self.title = 'graph_title'
 
-        self.counting_rate = 1
-        self.data = [0, 3, 5, 7, 2, 4, 3]
+        #self.counting_rate = 1
+        self.data = []
         self.x = []
 
-        self.MAX_INDEX = 10
+        if self.parent is None:
+            self.MAX_INDEX = 10
+            self.data = [0, 3, 5, 7, 2, 4, 3]
+        else:
+            self.MAX_INDEX = self.parent.ini_graph_span
 
         self.figure = Figure(figsize=(5, 4))
         self.ax = self.figure.add_subplot(111)
