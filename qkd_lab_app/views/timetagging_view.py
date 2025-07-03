@@ -52,16 +52,9 @@ class TimeTaggingView(QWidget):
         elif sender == self.stop_timetagging:
             self.timetagging.emit("stop")
 
-    def update_progress(self, value, iCh):
+    def update_progress(self, value, i):
         """update progress bar corresponding to the chanel index with a value between 0 and 1"""
         print("progress update done")
-        i = 0
-        if iCh == 2:
-            i = 1
-        elif iCh == 4:
-            i = 2
-        elif iCh == 8:
-            i = 3
         if value > 1:
             value = 1
         self.progress_bars[i].setValue(int(value * 100))

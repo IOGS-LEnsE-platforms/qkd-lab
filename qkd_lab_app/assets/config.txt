@@ -12,5 +12,5 @@ CPC_7;SN_24260025403
 
 % Paramètres du TDC
 TDC Internal Frequency;2000000
-Number of Samples;10000
+Number of Samples;40000
 TDC Time Resolution;0.013

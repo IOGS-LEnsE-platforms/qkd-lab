@@ -5,16 +5,20 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 if __name__ == '__main__':
     import sys, os
+from lensepy.css import *
 
 
 class FreeCPCView(QWidget):
+
+    live_signal = pyqtSignal(tuple)
+
     def __init__(self, parent = None):
         super().__init__()
         self.parent = parent
 
-        MAX_TIMESPAN = 5000
-        MIN_TIMESPAN = 10
-        INI_TIMESPAN = 500
+        MAX_COUNTS = 5000000
+        MIN_COUNTS = 10
+        INI_COUNTS = 500
 
         self.devices_list = ['2', '3', '4', '5', '6', '7']
         self.stack = []
@@ -55,15 +59,18 @@ class FreeCPCView(QWidget):
 
         self.spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.timespan_label = QLabel(f"Graph time span (ns) : {INI_TIMESPAN}")
+        self.timespan_label = QLabel(f"Graph max counts : {INI_COUNTS}")
 
         self.timespan_slider = QSlider(Qt.Orientation.Horizontal)
-        self.timespan_slider.setMinimum(MIN_TIMESPAN)
-        self.timespan_slider.setMaximum(MAX_TIMESPAN)
-        self.timespan_slider.setValue(INI_TIMESPAN)
+        self.timespan_slider.setMinimum(MIN_COUNTS)
+        self.timespan_slider.setMaximum(MAX_COUNTS)
+        self.timespan_slider.setValue(INI_COUNTS)
         self.timespan_slider.valueChanged.connect(self.slider_action)
 
         self.start_live = QPushButton("Start Live")
+        self.start_live.clicked.connect(self.update_action)
+        self.start_live.setStyleSheet(unactived_button)
+        self.start_live.setFixedHeight(BUTTON_HEIGHT)
 
         self.layout.addWidget(self.title)
         self.layout.addLayout(self.index_layout)
@@ -71,10 +78,11 @@ class FreeCPCView(QWidget):
         self.layout.addItem(self.spacer)
         self.layout.addWidget(self.timespan_label)
         self.layout.addWidget(self.timespan_slider)
+        self.layout.addWidget(self.start_live)
 
         self.setLayout(self.layout)
 
-        #self.init_checkbox_display({2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0})
+        self.init_checkbox_display({2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0})
 
     def find_devices_list(self, devices_dict):
         self.devices_list = []
@@ -86,10 +94,10 @@ class FreeCPCView(QWidget):
         self.combo_box.addItems(devices_list_text)
 
     def slider_action(self):
-        self.timespan_label.setText(f"Graph time span (ns) : {self.timespan_slider.value()}")
+        self.timespan_label.setText(f"Graph max counts : {self.timespan_slider.value()}")
 
     def update_action(self):
-        pass
+        self.live_signal.emit(("start",))
 
     def init_checkbox_display(self, devices_dict):
         '''draws the checkbox layout from a dict of the form {i : serial_no}'''
@@ -99,8 +107,6 @@ class FreeCPCView(QWidget):
         self.mini_checkbox_layout = []
 
         devices_list = list(devices_dict.keys())
-        print(devices_list)
-        print(self.devices_list)
 
         for i in range(len(devices_list)):
             device_index = int(devices_list[i])
@@ -108,8 +114,6 @@ class FreeCPCView(QWidget):
             self.checkbox_dict[device_index].setEnabled(False)
             for j in self.devices_list:
                 if device_index == int(j):
-                    print(device_index, j)
-                    print(self.checkbox_dict)
                     self.checkbox_dict[device_index].setEnabled(True)
             self.checkbox_dict[device_index].stateChanged.connect(self.update_checkbox_display)
 
@@ -143,11 +147,13 @@ class FreeCPCView(QWidget):
                     self.checkbox_dict[index].blockSignals(False)
                 self.stack.append(i)
                 print(self.stack)
+                self.live_signal.emit(("checkbox", self.stack))
                 break
             elif sender == self.checkbox_dict[i] and not self.checkbox_dict[i].isChecked():
                 if i in self.stack:
                     self.stack.remove(i)
                 print(self.stack)
+                self.live_signal.emit(("checkbox", self.stack))
                 break
 
 if __name__ == '__main__':

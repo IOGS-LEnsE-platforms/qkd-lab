@@ -31,7 +31,7 @@ class CorrelationWorker(QObject):
         self.htdc = self.parent.htdc
         self._running = True
 
-        self.iDev = self.parent.iDev
+        self.iDev = self.parent.htdc_iDev
 
         self.CH_BOB = self.parent.CH_BOB
 
@@ -86,7 +86,7 @@ class TimeTaggingWorker(QObject):
         self.CH_BOB = self.parent.CH_BOB
         self.blocked = False
 
-        self.iDev = self.parent.iDev
+        self.iDev = self.parent.htdc_iDev
 
         self.iDev = 0
         self.data = [[],[],[],[]]
@@ -113,7 +113,7 @@ class TimeTaggingWorker(QObject):
                     if len(sample) > 0:
                         print(type(sample[0]))
                     if sample:
-                        self.sample_recieved.emit((sample, iCh, self.htdc.nSampleRecovered[iCh]/self.htdc.nSampleToRecover[iCh]))
+                        self.sample_recieved.emit(("time tagging", sample, i, self.htdc.nSampleRecovered[iCh]/self.htdc.nSampleToRecover[iCh]))
                         self.blocked = True
                         while self.blocked:
                             time.sleep(0.001)
@@ -130,7 +130,7 @@ class TimeTaggingWorker(QObject):
             self.acquisition_finished.emit("finished")
 
         except Exception as e:
-            print(f"Exception in worker run: {e}")
+            print(f"\033[31mException in worker run: {e}\033[0m")
         finally:
             self.acquisition_finished.emit("finished")
             self._running = False
@@ -173,3 +173,49 @@ class TimeTaggingWorker(QObject):
     def init_channels(self):
         for iCh in self.CH_BOB:
             self.htdc.ready_channel_timetagging(self.iDev, iCh)
+
+
+class liveWorker(QObject):
+
+    sample_recieved = pyqtSignal(tuple)
+    acquisition_finished = pyqtSignal(str)
+
+    def __init__(self, parent = None):
+        super().__init__()
+        self.parent = parent
+
+        self.cpc = self.parent.cpc
+        self.cpc_iDev = self.parent.cpc_iDev
+
+        self._running = True
+        self.blocked = False
+
+        self.init_channels()
+        self.parent.run_back.connect(self.loop)
+
+    def loop(self):
+        self.blocked = False
+
+    def run(self):
+        try:
+            while self._running:
+                for i, iDev in enumerate(self.cpc_iDev):
+                    _, cnt = self.cpc.get_data(iDev)
+                    if cnt:
+                        self.sample_recieved.emit(("live", cnt, i))
+
+                    self.blocked = True
+                    while self.blocked:
+                        time.sleep(0.001)
+            self.acquisition_finished.emit("finished")
+        except Exception as e:
+            print(f"\033[31mException in worker run: {e}\033[0m")
+        finally:
+            self.acquisition_finished.emit("finished")
+            self._running = False
+
+    def stop(self):
+        self._running = False
+
+    def init_channels(self):
+        self.cpc.ready_devices()

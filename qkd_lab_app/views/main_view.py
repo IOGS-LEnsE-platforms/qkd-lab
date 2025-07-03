@@ -55,6 +55,7 @@ class TopWidget(QWidget):
         self.title = TitleView(self)
         self.free_cpc = FreeCPCView(self)
 
+        self.free_cpc.live_signal.connect(self.parent.live_action)
         self.layout.addWidget(self.title)
         self.layout.addWidget(self.free_cpc)
         self.setLayout(self.layout)
@@ -87,10 +88,11 @@ class MainView(QWidget):
         self.images_layout.addWidget(self.bottom_right_display)
 
         ###Contrôles
-        self.top_widget = TopWidget(self)
+        self.top_widget = TopWidget(self.parent)
         self.correlation_view = CorrelationView(self)
         self.time_tagging_view = TimeTaggingView(self)
 
+        self.top_widget.setMaximumHeight(400)
         self.top_widget.setMaximumWidth(300)
         self.correlation_view.setMaximumWidth(300)
         self.time_tagging_view.setMaximumWidth(300)
@@ -133,20 +135,20 @@ class MainView(QWidget):
         |--------|--------|
         '''
         print("graphs update done")
-        if index == 1:
+        if index == 0:
             self.top_left_display.update_data(new_data)
-        elif index == 2:
+        elif index == 1:
             self.top_right_display.update_data(new_data)
-        elif index == 4:
+        elif index == 2:
             self.bottom_left_display.update_data(new_data)
-        elif index == 8:
+        elif index == 3:
             self.bottom_right_display.update_data(new_data)
 
     def update_correlation_progress(self, value):
         self.correlation.update_progress(value)
 
-    def update_timetagging_progress(self, value, iCh):
-        self.time_tagging_view.update_progress(value, iCh)
+    def update_timetagging_progress(self, value, i):
+        self.time_tagging_view.update_progress(value, i)
 
     def update_devices(self, available_dict, all_dict):
         self.top_widget.free_cpc.find_devices_list(available_dict)
