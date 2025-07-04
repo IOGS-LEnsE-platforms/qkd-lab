@@ -55,6 +55,10 @@ class PathBrowser(QWidget):
         self.path = directory + r'/' + self.name + '.txt'
         self.file_extracted.emit(self.path)
 
+    def file_selected(self, directory):
+        self.path = directory
+        self.file_extracted.emit(self.path)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     P = PathBrowser()
