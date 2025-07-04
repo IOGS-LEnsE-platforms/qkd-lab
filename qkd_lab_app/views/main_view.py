@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QGr
 sys.path.append(os.path.abspath(".."))
 
 from views.free_cpc_view import FreeCPCView
-from views.correlation_view import CorrelationView
+from views.correlation_view import CorrelationView, TDCParamsView
 from views.histogram_display_widget import HistogramDisplayWidget
 from views.graph_view import GraphView
 from views.title_view import TitleView
@@ -101,20 +101,24 @@ class MainView(QWidget):
 
         ###Contrôles
         self.top_widget = TopWidget(self.parent)
-        self.correlation_view = CorrelationView(self)
-        self.time_tagging_view = TimeTaggingView(self)
+        self.tdc_params_view = TDCParamsView(self.parent)
+        self.time_tagging_view = TimeTaggingView(self.parent)
+        self.correlation_view = CorrelationView(self.parent)
 
         self.top_widget.setMaximumHeight(400)
         self.top_widget.setMaximumWidth(300)
+        self.tdc_params_view.setMaximumWidth(300)
         self.correlation_view.setMaximumWidth(300)
         self.time_tagging_view.setMaximumWidth(300)
 
         self.controls_layout.addWidget(self.top_widget)
-        self.controls_layout.addWidget(self.correlation_view)
+        self.controls_layout.addWidget(self.tdc_params_view)
         self.controls_layout.addWidget(self.time_tagging_view)
+        self.controls_layout.addWidget(self.correlation_view)
 
 
         ### Events
+        self.params = self.tdc_params_view.params
         self.timetagging = self.time_tagging_view.timetagging
         self.correlation = self.correlation_view.correlation
 
@@ -188,6 +192,12 @@ class MainView(QWidget):
             self.bottom_left_display.set_title(title)
         elif index == 3:
             self.bottom_right_display.set_title(title)
+
+    def setEnabled(self, value):
+        self.top_widget.free_cpc.setEnabled(value)
+        self.tdc_params_view.setEnabled(value)
+        self.time_tagging_view.setEnabled(value)
+        self.correlation_view.setEnabled(value)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

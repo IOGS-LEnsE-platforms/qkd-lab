@@ -153,10 +153,8 @@ class TimeTaggingWorker(QObject):
             self.stop()
 
         except Exception as e:
-            print(f"\033[31mException in worker run: {e}\033[0m")
+            print(f"\033[31mException in worker run: {e}, the data will not be saved\033[0m")
         finally:
-            if not self.stopping:
-                self.acquisition_finished.emit("finished")
             self.finished = True
             self.stop()
 
@@ -171,7 +169,6 @@ class TimeTaggingWorker(QObject):
             self.finished = True
         self._running = False
         while not self.finished:
-            print("not finished")
             time.sleep(0.001)
 
     def save_data_in_file(self, data, path):
@@ -187,13 +184,13 @@ class TimeTaggingWorker(QObject):
 
         f = open(path, "w")
         print("Saving data : " + path)
-        f.write("%" + "Time\tTag\t"*4 + "\n")
+        f.write("%" + "tag   time   "*4 + "\n")
         for i in range(max(len(tag_[0]), len(tag_[1]), len(tag_[2]), len(tag_[3]))):
             for j in range(4):
                 if i >= len(tag_[j]):
                     f.write('-\t-\t')
                 else:
-                    f.write('%s\t%s\t' % (time_[j][i], tag_[j][i]))
+                    f.write('%s\t%s\t' % (tag_[j][i], time_[j][i]))
             f.write('\n')
 
         f.close()
@@ -254,7 +251,6 @@ class liveWorker(QObject):
             print(f"\033[31mException in worker run: {e}\033[0m")
         finally:
             self._running = False
-            self.acquisition_finished.emit("finished")
 
     def stop(self):
         print("stopping live")
@@ -266,9 +262,9 @@ class liveWorker(QObject):
         if not self._running:
             self.finished = True
         self._running = False
-        self.cpc.closeDevices()
         while not self.finished:
             time.sleep(0.001)
+        self.cpc.closeDevices()
 
     def init_channels(self):
         self.cpc.ready_devices()

@@ -31,8 +31,11 @@ class HistogramDisplayWidget(QWidget):
         
         ### Paramètres de l'histogramme
         self.MIN_DELAY = 0
-        self.MAX_DELAY = self.parent.MAX_DELAY
-        self.res = self.parent.res
+        self.MAX_DELAY = 100000
+        self.res = 0.013
+        if self.parent is not None:
+            self.MAX_DELAY = self.parent.MAX_DELAY
+            self.res = self.parent.res
         self.hist_dict = {}#{self.MIN_DELAY/self.res:0.001, self.MAX_DELAY/self.res:0.001}
 
         self.figure = Figure(figsize=(5, 4))
@@ -69,7 +72,7 @@ class HistogramDisplayWidget(QWidget):
         x = [t*self.res for t in self.hist_dict.keys()]
         y = [value for value in self.hist_dict.values()]
 
-        self.ax.bar(x, y, width = self.MAX_DELAY*self.res/5, color='black', align='center')
+        self.ax.bar(x, y, color='black', align='center')#self.MAX_DELAY*self.res/5
         self.ax.set_title(self.title)
         self.ax.set_xlabel("time (ns)")
         self.canvas.draw()

@@ -5,6 +5,7 @@ import sys, os
 sys.path.append(os.path.abspath(".."))
 
 from models.workers import *
+from models.correlator import Correlator
 from models.config_dict import ConfigDict
 from views.main_view import MainView
 
@@ -51,12 +52,15 @@ class MainController(QWidget):
 
         self.main_view.timetagging.connect(self.timetagging_action)
         self.main_view.correlation.connect(self.start_correlation)
+        self.main_view.params.connect(self.change_tdc_params)
 
         self.path = os.path.dirname(os.path.abspath(".")) + r"\models\test.txt"
 
         print(self.path)
 
         self.CH_BOB = [1, 2, 4, 8]
+
+        self.correlator = Correlator(self)
 
         self.cpc = AureaCPC(self)
         self.iDev_dict = self.cpc.iDev_dict
@@ -106,6 +110,7 @@ class MainController(QWidget):
             self.thread.wait()
 
     def start_timetagging(self):
+        self.main_view.setEnabled(False)
         if self.worker is not None:
             self.worker.stop()
 
@@ -120,6 +125,7 @@ class MainController(QWidget):
         QApplication.processEvents()
 
         self.worker = TimeTaggingWorker(self)
+        self.main_view.clear()
 
         self.worker.moveToThread(self.thread)
 
@@ -128,6 +134,7 @@ class MainController(QWidget):
         self.worker.acquisition_finished.connect(self.save_timetagging_data, Qt.ConnectionType.QueuedConnection)
 
         self.thread.start()
+        self.main_view.setEnabled(True)
 
     def stop_timetagging(self):
         if isinstance(self.worker, TimeTaggingWorker):
@@ -136,6 +143,7 @@ class MainController(QWidget):
             self.thread.wait()
 
     def start_live(self):
+        self.main_view.setEnabled(False)
         if self.worker is not None:
             self.worker.stop()
 
@@ -162,6 +170,7 @@ class MainController(QWidget):
         self.worker.acquisition_finished.connect(self.stop_live, Qt.ConnectionType.QueuedConnection)
 
         self.thread.start()
+        self.main_view.setEnabled(True)
 
     def stop_live(self):
         if isinstance(self.worker, liveWorker):
@@ -242,6 +251,12 @@ class MainController(QWidget):
         if event[0] == "graph span":
             self.main_view.set_span(event[1])
 
+    def change_tdc_params(self, event):
+        self.frequency = int(event[0])
+        self.N_SAMPLE = int(event[1])
+        self.htdc.N_SAMPLE = self.N_SAMPLE
+        self.htdc.frequency = self.frequency
+        self.htdc.setFrequency(self.htdc_iDev, self.frequency)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

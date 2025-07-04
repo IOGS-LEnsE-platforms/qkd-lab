@@ -26,6 +26,7 @@ class FreeCPCView(QWidget):
 
         self.devices_list = ['2', '3', '4', '5', '6', '7']
         self.stack = []
+        self.available_indexes = []
 
         self.layout = QVBoxLayout()
 
@@ -110,6 +111,7 @@ class FreeCPCView(QWidget):
 
         self.checkbox_dict = {}
         self.mini_checkbox_layout = []
+        self.available_indexes = []
 
         devices_list = list(devices_dict.keys())
 
@@ -120,6 +122,7 @@ class FreeCPCView(QWidget):
             for j in self.devices_list:
                 if device_index == int(j):
                     self.checkbox_dict[device_index].setEnabled(True)
+                    self.available_indexes.append(device_index)
             self.checkbox_dict[device_index].stateChanged.connect(self.update_checkbox_display)
 
             mini_layout = QHBoxLayout()
@@ -160,6 +163,20 @@ class FreeCPCView(QWidget):
                 print(self.stack)
                 self.live_signal.emit(("checkbox", self.stack))
                 break
+
+    def setEnabled(self, value:bool):
+        if not value:
+            for checkbox in self.checkbox_dict.values():
+                checkbox.setEnabled(False)
+        else:
+            for i in self.available_indexes:
+                self.checkbox_dict[i].setEnabled(True)
+        self.timespan_slider.setEnabled(value)
+        self.start_live.setEnabled(value)
+        if value:
+            self.start_live.setStyleSheet(unactived_button)
+        else:
+            self.start_live.setStyleSheet(disabled_button)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
