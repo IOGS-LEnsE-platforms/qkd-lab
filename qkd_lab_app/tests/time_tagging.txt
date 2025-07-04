@@ -17,8 +17,8 @@
 %   tag : number of Sync period until the event 
 %   time: time in ns between last Sync and event
 % Format 
-% |-----ch1----|-----ch2----|-----ch3----|
-%   tag   time   tag   time   tag   time
+% |-----ch1----|-----ch2----|
+%   tag   time   tag   time
    0   4149.054   0   770.783
    4   5624.320   4   4996.082
    8   9212.515   9   424.554

@@ -5,7 +5,7 @@ import sys, os
 sys.path.append(os.path.abspath(".."))
 
 from models.workers import *
-from models.correlator import Correlator
+from models.path_browser import PathBrowser
 from models.config_dict import ConfigDict
 from views.main_view import MainView
 
@@ -26,6 +26,7 @@ class MainController(QWidget):
         self.frequency = 2000000
         self.N_SAMPLE = 10000
         self.res = 0.013
+        self.ini_path = os.path.dirname(os.path.abspath("."))
 
         if "TDC Internal Frequency" in self.default_params.keys():
             self.frequency = int(self.default_params["TDC Internal Frequency"])
@@ -41,6 +42,16 @@ class MainController(QWidget):
             self.min_graph_span = int(self.default_params["Minimum Graph Span"])
         if "HTDC Overload" in self.default_params.keys():
             self.htdc_overload = int(self.default_params["HTDC Overload"])
+        if "Initial File Path" in self.default_params.keys():
+            self.ini_path = PathBrowser(self.default_params["Initial File Path"])
+        if "Max Frequency" in self.default_params.keys():
+            self.max_freq = int(self.default_params["Max Frequency"])
+        if "Min Frequency" in self.default_params.keys():
+            self.min_freq = int(self.default_params["Min Frequency"])
+        if "Max Number Samples"  in self.default_params.keys():
+            self.max_num_samples = int(self.default_params["Max Number Samples"])
+        if "Min Number Samples" in self.default_params.keys():
+            self.min_num_samples = int(self.default_params["Min Number Samples"])
 
         self.MAX_DELAY = int(1e09 / self.frequency)
 
@@ -51,7 +62,7 @@ class MainController(QWidget):
             self.main_view = self.parent.main_view
 
         self.main_view.timetagging.connect(self.timetagging_action)
-        self.main_view.correlation.connect(self.start_correlation)
+        self.main_view.correlation.connect(self.correlation_action)
         self.main_view.params.connect(self.change_tdc_params)
 
         self.path = os.path.dirname(os.path.abspath(".")) + r"\models\test.txt"
@@ -60,7 +71,14 @@ class MainController(QWidget):
 
         self.CH_BOB = [1, 2, 4, 8]
 
-        self.correlator = Correlator(self)
+        self.browser = PathBrowser(self)
+        self.browser.file_extracted.connect(self.get_path)
+        self.PATH_BOB = ''
+        self.PATH_ALICE = ''
+        self.i_alice = 0
+        self.to_which = ''
+
+        self.main_view.file_signal.connect(self.handle_files)
 
         self.cpc = AureaCPC(self)
         self.iDev_dict = self.cpc.iDev_dict
@@ -75,12 +93,13 @@ class MainController(QWidget):
 
         self.worker = None
 
-        self.main_view.show()
+        self.main_view.showMaximized()
 
         self.update_progress.connect(self.main_view.update_timetagging_progress)
         self.update_graphs.connect(self.main_view.update_data)
 
     def start_correlation(self):
+        self.main_view.setEnabled(False)
         if self.worker is not None:
             self.worker.stop()
 
@@ -96,12 +115,11 @@ class MainController(QWidget):
         self.worker = CorrelationWorker(self)
         self.worker.moveToThread(self.thread)
 
-        self.htdc.ready_channel_correlation(self.iDev)
-
         self.thread.started.connect(self.worker.run)
         self.worker.sample_recieved.connect(self.data_action)
 
         self.thread.start()
+        self.main_view.setEnabled(True)
 
     def stop_correlation(self):
         if isinstance(self.worker, CorrelationWorker):
@@ -193,6 +211,9 @@ class MainController(QWidget):
             print("live graphs update called")
             self.update_graphs.emit(event[1], int(event[2]))
             self.run_back.emit("run")
+        elif event[0] == "correlation":
+            self.update_graphs.emit(event[1], int(event[2]))
+            self.run_back.emit("run")
 
     def timetagging_action(self, event):
         if event == "start":
@@ -201,6 +222,12 @@ class MainController(QWidget):
             self.stop_timetagging()
 
     def save_timetagging_data(self):
+        self.PATH_BOB = self.path
+        self.main_view.set_correlation_path(self.PATH_BOB, True)
+        if self.PATH_BOB != '':
+            self.main_view.enable_correlation(True)
+        else:
+            self.main_view.enable_correlation(False)
         self.worker.save_data_in_file(self.worker.data, self.path)
         self.worker.stop()
 
@@ -257,6 +284,42 @@ class MainController(QWidget):
         self.htdc.N_SAMPLE = self.N_SAMPLE
         self.htdc.frequency = self.frequency
         self.htdc.setFrequency(self.htdc_iDev, self.frequency)
+
+    def correlation_action(self, event):
+        if event == "correlation":
+            self.start_correlation()
+        elif event == "browse bob":
+            self.browser.close()
+            self.to_which = 'bob'
+            self.browser.chose_file(self.ini_path)
+        elif event == "browse alice":
+            self.browser.close()
+            self.to_which = 'alice'
+            self.browser.chose_file(self.ini_path)
+        elif event == "CH1":
+            self.i_alice = 0
+        elif event == "CH2":
+            self.i_alice = 1
+
+    def handle_files(self, event):
+        self.to_which = "timetagging"
+        print(event)
+        self.browser.write_file(event, self.ini_path)
+
+    def get_path(self, event):
+        if self.to_which == 'bob':
+            self.PATH_BOB = event
+            self.main_view.set_correlation_path(self.PATH_BOB, True)
+        elif self.to_which == 'alice':
+            self.PATH_ALICE = event
+            self.main_view.set_correlation_path(self.PATH_ALICE, False)
+        elif self.to_which == 'timetagging':
+            self.path = event
+            self.main_view.set_timetag_dir(event)
+        if self.PATH_BOB != '':
+            self.main_view.enable_correlation(True)
+        else:
+            self.main_view.enable_correlation(False)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

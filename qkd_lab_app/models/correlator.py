@@ -31,32 +31,35 @@ class Correlator(QWidget):
 
     def extract_data(self, path):
         timetag_dict = {}
-        with open(path, 'r') as file:
-            print('opened')
-            for line in file:
-                if str(line).startswith('%') or str(line).startswith('#'):
-                    if '|' in line:
-                        inlets = line.split('|')
-                        for i in range(len(inlets) - 2):
-                            timetag_dict[i] = [[], []]
+        try:
+            with open(path, 'r') as file:
+                print('opened')
+                for line in file:
+                    if str(line).startswith('%') or str(line).startswith('#'):
+                        if '|' in line:
+                            inlets = line.split('|')
+                            for i in range(len(inlets) - 2):
+                                timetag_dict[i] = [[], []]
+                        else:
+                            continue
                     else:
-                        continue
-                else:
-                    if '   ' in line:
-                        param = str(line).split('   ')
-                    elif '\t' in line:
-                        param = str(line).split('\t')
-                    if '' in param:
-                        param.remove('')
-                    for i in range(len(param)//2):
-                        if not i in timetag_dict:
-                            timetag_dict[i] = [[], []]
-                        tag = param[2*i].strip()
-                        time = param[2*i+1].strip()
-                        if time != '-':
-                            timetag_dict[i][0].append(int(tag))
-                            timetag_dict[i][1].append(float(time))
-        self.timetag_dict = timetag_dict
+                        if '   ' in line:
+                            param = str(line).split('   ')
+                        elif '\t' in line:
+                            param = str(line).split('\t')
+                        if '' in param:
+                            param.remove('')
+                        for i in range(len(param)//2):
+                            if not i in timetag_dict:
+                                timetag_dict[i] = [[], []]
+                            tag = param[2*i].strip()
+                            time = param[2*i+1].strip()
+                            if time != '-':
+                                timetag_dict[i][0].append(int(tag))
+                                timetag_dict[i][1].append(float(time))
+            self.timetag_dict = timetag_dict
+        except Exception as e:
+            print(f"\033[31mException in Correlator : {e}, chose another file\033[0m")
         return timetag_dict
 
     def concatenate(self, path1, path2):

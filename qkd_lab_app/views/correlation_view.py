@@ -1,4 +1,5 @@
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QProgressBar, QSlider, QApplication
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QProgressBar, QSlider, QApplication, \
+    QLineEdit, QCheckBox
 from PyQt6.QtCore import Qt, pyqtSignal
 from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import translate
 
@@ -18,6 +19,8 @@ class CorrelationView(QWidget):
 
         self.layout = QVBoxLayout()
 
+        self.correlation_enabled = False
+
         self.title = QLabel('correlation_title')
 
         self.Nmatch_label = QLabel(f'number_of_time_matches : {0}')
@@ -27,12 +30,64 @@ class CorrelationView(QWidget):
         self.start_cor_button.setFixedHeight(BUTTON_HEIGHT)
         self.start_cor_button.clicked.connect(self.start_action)
 
-        self.cor_bar = QProgressBar()
-        self.cor_bar.setMaximum(100)
-        self.cor_bar.setMinimum(0)
-        self.cor_bar.setValue(0)
+        self.bob_layout = QVBoxLayout()
+        self.bob_title = QLabel('bob_title')
+        self.bob_title.setStyleSheet(styleH2)
+
+        self.bob_sub_layout = QHBoxLayout()
+        self.bob_path_edit = QLineEdit()
+        self.bob_path_edit.setEnabled(False)
+        self.bob_browse = QPushButton('Browse')
+        self.bob_browse.setStyleSheet(unactived_button)
+        self.bob_browse.setFixedHeight(OPTIONS_BUTTON_HEIGHT)
+        self.bob_browse.clicked.connect(self.file_action)
+
+        self.bob_sub_layout.addWidget(QLabel('Path : '))
+        self.bob_sub_layout.addWidget(self.bob_path_edit)
+        self.bob_sub_layout.addWidget(self.bob_browse)
+
+        self.bob_layout.addWidget(self.bob_title)
+        self.bob_layout.addLayout(self.bob_sub_layout)
+
+        self.alice_layout = QVBoxLayout()
+        self.alice_title = QLabel('alice_title')
+        self.alice_title.setStyleSheet(styleH2)
+
+        self.alice_sub_layout = QHBoxLayout()
+        self.alice_path_edit = QLineEdit()
+        self.alice_path_edit.setEnabled(False)
+        self.alice_browse = QPushButton('Browse')
+        self.alice_browse.setStyleSheet(unactived_button)
+        self.alice_browse.setFixedHeight(OPTIONS_BUTTON_HEIGHT)
+        self.alice_browse.clicked.connect(self.file_action)
+
+        self.alice_sub_layout.addWidget(QLabel('Path : '))
+        self.alice_sub_layout.addWidget(self.alice_path_edit)
+        self.alice_sub_layout.addWidget(self.alice_browse)
+
+        self.alice_checkbox_layout = QHBoxLayout()
+        self.alice_ch1_checkbox = QCheckBox()
+        self.alice_ch1_checkbox.stateChanged.connect(self.checkbox_action)
+        self.alice_ch1_checkbox.blockSignals(True)
+        self.alice_ch1_checkbox.setChecked(True)
+        self.alice_ch1_checkbox.blockSignals(False)
+        self.alice_ch1_label = QLabel("CH1 : ")
+        self.alice_ch2_checkbox = QCheckBox()
+        self.alice_ch2_checkbox.stateChanged.connect(self.checkbox_action)
+        self.alice_ch2_label = QLabel("CH2 : ")
+
+        self.alice_checkbox_layout.addWidget(self.alice_ch1_label)
+        self.alice_checkbox_layout.addWidget(self.alice_ch1_checkbox)
+        self.alice_checkbox_layout.addWidget(self.alice_ch2_label)
+        self.alice_checkbox_layout.addWidget(self.alice_ch2_checkbox)
+
+        self.alice_layout.addWidget(self.alice_title)
+        self.alice_layout.addLayout(self.alice_sub_layout)
+        self.alice_layout.addLayout(self.alice_checkbox_layout)
 
         self.layout.addWidget(self.title)
+        self.layout.addLayout(self.bob_layout)
+        self.layout.addLayout(self.alice_layout)
         self.layout.addWidget(self.start_cor_button)
 
         self.setLayout(self.layout)
@@ -42,7 +97,52 @@ class CorrelationView(QWidget):
         if sender == self.start_cor_button:
             self.correlation.emit("correlation")
 
+    def checkbox_action(self):
+        sender = self.sender()
+        if sender == self.alice_ch1_checkbox:
+            if self.alice_ch1_checkbox.isChecked():
+                self.alice_ch2_checkbox.blockSignals(True)
+                self.alice_ch2_checkbox.setChecked(False)
+                self.alice_ch2_checkbox.blockSignals(False)
+            self.correlation.emit('CH1')
+        elif sender == self.alice_ch2_checkbox:
+            if self.alice_ch2_checkbox.isChecked():
+                self.alice_ch1_checkbox.blockSignals(True)
+                self.alice_ch1_checkbox.setChecked(False)
+                self.alice_ch1_checkbox.blockSignals(False)
+            self.correlation.emit('CH2')
+
+    def file_action(self):
+        sender = self.sender()
+        if sender == self.bob_browse:
+            self.correlation.emit("browse bob")
+        if sender == self.alice_browse:
+            self.correlation.emit("browse alice")
+
+    def set_path(self, path:str, to_which:bool):
+        '''to_which = True : bob, to_which = False, alice'''
+        if to_which:
+            self.bob_path_edit.setText(path)
+        else:
+            self.alice_path_edit.setText(path)
+
     def setEnabled(self, value):
+        self.alice_ch1_checkbox.setEnabled(value)
+        self.alice_ch2_checkbox.setEnabled(value)
+        self.alice_browse.setEnabled(value)
+        self.bob_browse.setEnabled(value)
+        if self.correlation_enabled:
+            self.start_cor_button.setEnabled(value)
+            if value:
+                self.start_cor_button.setStyleSheet(unactived_button)
+            else:
+                self.start_cor_button.setStyleSheet(disabled_button)
+        else:
+            self.start_cor_button.setEnabled(False)
+            self.start_cor_button.setStyleSheet(disabled_button)
+
+    def set_correlation_enabled(self, value):
+        self.correlation_enabled = value
         self.start_cor_button.setEnabled(value)
         if value:
             self.start_cor_button.setStyleSheet(unactived_button)
@@ -59,13 +159,13 @@ class TDCParamsView(QWidget):
 
         self.layout = QVBoxLayout()
 
-        MAX_FREQUENCY = 10000000
-        MIN_FREQUENCY = 10000
-        FREQ_INI_VALUE = 100000
+        MAX_FREQUENCY = self.parent.max_freq
+        MIN_FREQUENCY = self.parent.min_freq
+        FREQ_INI_VALUE = self.parent.frequency
 
-        MIN_N_SAMPLE = 10
-        MAX_N_SAMPLE = 30000
-        N_SAMPLE_INI = 10000
+        MIN_N_SAMPLE = self.parent.min_num_samples
+        MAX_N_SAMPLE = self.parent.max_num_samples
+        N_SAMPLE_INI = self.parent.N_SAMPLE
 
         self.title = QLabel('tdc_params_title')
 

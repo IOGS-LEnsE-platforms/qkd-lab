@@ -14,21 +14,20 @@ class PathBrowser(QWidget):
 
         self.dialog = None
         self.name = ''
-
         self.path = ''
 
         if __name__ == '__main__':
-            self.chose_file('', 'C:')
+            self.chose_file('C:')
 
     def connect_read(self, signal):
         signal.connect(self.chose_file)
 
-    def chose_file(self, event, initial_dir):
+    def chose_file(self, initial_dir):
         """Action performed when a destination file must be chosen"""
         self.dialog = QFileDialog()
         self.dialog.setDirectory(initial_dir)
         self.dialog.setFileMode(QFileDialog.FileMode.AnyFile)
-        self.dialog.fileSelected.connect(self.folder_selected)
+        self.dialog.fileSelected.connect(self.file_selected)
         self.dialog.show()
 
     def connect_write(self, signal):
@@ -36,10 +35,8 @@ class PathBrowser(QWidget):
 
     def write_file(self, event, initial_dir):
         """Action performed when a destination file must be created, the event MUST be of the form event=message"""
-        source_event = event.split("=")
-        source = source_event[0]
-        message = source_event[1]
-        if source == "request":
+        source, message = event
+        if source == "browse":
             self.dialog = QFileDialog()
             self.dialog.setFileMode(QFileDialog.FileMode.Directory)
             self.dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
@@ -47,17 +44,22 @@ class PathBrowser(QWidget):
             self.dialog.fileSelected.connect(self.folder_selected)
             self.dialog.show()
 
-        if source == "name":
+        elif source == "name":
             if message != '':
                 self.name = message
+                self.file_extracted.emit(self.path + r'/' + self.name + '.txt')
 
     def folder_selected(self, directory):
-        self.path = directory + r'/' + self.name + '.txt'
-        self.file_extracted.emit(self.path)
+        self.path = directory
+        self.file_extracted.emit(self.path + r'/' + self.name + '.txt')
 
     def file_selected(self, directory):
         self.path = directory
-        self.file_extracted.emit(self.path)
+        self.file_extracted.emit(directory)
+
+    def close(self):
+        if self.dialog is not None:
+            self.dialog.close()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

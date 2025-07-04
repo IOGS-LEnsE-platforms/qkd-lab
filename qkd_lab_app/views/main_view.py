@@ -104,6 +104,7 @@ class MainView(QWidget):
         self.tdc_params_view = TDCParamsView(self.parent)
         self.time_tagging_view = TimeTaggingView(self.parent)
         self.correlation_view = CorrelationView(self.parent)
+        self.correlation_view.setEnabled(False)
 
         self.top_widget.setMaximumHeight(400)
         self.top_widget.setMaximumWidth(300)
@@ -121,6 +122,7 @@ class MainView(QWidget):
         self.params = self.tdc_params_view.params
         self.timetagging = self.time_tagging_view.timetagging
         self.correlation = self.correlation_view.correlation
+        self.file_signal = self.time_tagging_view.file_signal
 
         ### Mise en place du layout
         self.layout.addLayout(self.controls_layout)
@@ -198,6 +200,16 @@ class MainView(QWidget):
         self.tdc_params_view.setEnabled(value)
         self.time_tagging_view.setEnabled(value)
         self.correlation_view.setEnabled(value)
+
+    def set_correlation_path(self, path, to_which:bool):
+        '''to_which = True : bob, to_which = False, alice'''
+        self.correlation_view.set_path(path, to_which)
+
+    def enable_correlation(self, value):
+        self.correlation_view.set_correlation_enabled(value)
+
+    def set_timetag_dir(self, path):
+        self.time_tagging_view.set_file_dir(path)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

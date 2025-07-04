@@ -13,6 +13,10 @@ HTDC_RES;0.013
 TDC Internal Frequency;2000000
 Number of Samples;40000
 TDC Time Resolution;0.013
+Max Number Samples;50000
+Min Number Samples;10
+Max Frequency;3000000
+Min Frequency;300000
 
 %Limite de la taille des échantillons pour éviter les freeze times
 HTDC Overload;500
